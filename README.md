@@ -22,13 +22,19 @@ The skills call the `bluebox` CLI, so you need a Bluebox account and the CLI. Th
 
 ## Install
 
-Install every skill for the agents you use, in the current project:
+In your project, run:
+
+```bash
+npx skills add bluebox-hq/skills
+```
+
+It asks which skills to install and for which agents. To choose without the questions, for example in a script or when your coding agent runs the install, name them:
 
 ```bash
 npx skills add bluebox-hq/skills --skill '*' --agent claude-code cursor
 ```
 
-Name one or more skills after `--skill` to install only those. Add `-g` to install for your user instead of the current project. Prefer `--agent` over `--all`: `--all` installs for every agent `skills` supports and adds a skills folder for each to your project.
+Name one or more skills after `--skill` to install only those; `bluebox-otel-instrumentation-guided` needs `bluebox-otel-instrumentation` too. Add `-g` to install for your user instead of the current project. Prefer `--agent` over `--all`: `--all` installs for every agent `skills` supports and adds a skills folder for each to your project.
 
 ## Update and remove
 
