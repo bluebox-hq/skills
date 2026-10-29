@@ -37,7 +37,13 @@ npx skills update
 npx skills remove bluebox-production-query
 ```
 
-Install each skill with one tool only. To switch to `bluebox setup`, first remove the copies you installed here with `npx skills remove --all` (add `-g` for a user install), then run `bluebox setup`.
+Install each skill with one tool only. To switch to `bluebox setup`, first remove the copies you installed here (add `-g` for a user install), then run `bluebox setup`:
+
+```bash
+npx skills remove bluebox-investigation-context bluebox-otel-instrumentation bluebox-otel-instrumentation-guided bluebox-overview bluebox-production-query
+```
+
+Name the skills instead of using `--all`, which removes every skill in your agents' skills folders, not only these.
 
 ## License
 
