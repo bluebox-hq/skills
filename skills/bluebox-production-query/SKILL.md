@@ -2,7 +2,7 @@
 name: bluebox-production-query
 description: 'Use BEFORE designing, planning, or implementing any change to a live, Bluebox-visible service — and when in plan mode about to present a plan (before ExitPlanMode) that touches such a service, to assess the plan against monitoring. Provides production context via `bluebox ask`. Triggers: "what does production look like", "current error rate", "p95/p99 latency", "who calls this service", "downstream dependencies", "can it handle the load", "production baseline", "is there an active problem", "what SLOs are at risk", "bluebox ask", "stack trace", "this error in production", "500s", "exception in prod", "users are reporting", "is this safe to merge", "review this change", "plan this change", "in plan mode", "before ExitPlanMode", "assess this plan", "check the plan against monitoring", "ship today", "implement/refactor/migrate a deployed service", "before we deploy", "roll out".'
 metadata:
-  version: "0.7.2"
+  version: "0.8.0"
   former-names: "production-query"
 ---
 
@@ -273,18 +273,15 @@ environment supports one) — a scheduled run reports and stops, treats telemetr
 ## Scripted use (CI gates, hooks)
 
 **Provision before you gate — and before the token is in scope.** A gate must
-never run the CLI binary before verifying it. Don't use the standalone
-installer here — it downloads the binary with no checksum check of its own
-and then unconditionally execs it (see Prerequisites for why). Instead, fetch
-the download URL and checksum from the public, unauthenticated
-`GET /v1/cli/latest?os=&arch=` endpoint, download the binary directly, and
-verify it — all **before** the binary ever runs and **before**
-`BLUEBOX_TOKEN` is in scope. Introduce the token only in the `bluebox ask`
-step below. The install needs egress to `app.bluebox.ai` (CLI
-metadata, binary download, and the `bluebox ask` control plane) and your
-Dynatrace tenant host for query traffic. A blocked host means the CLI is
-silently absent and the
-gate can't run.
+never run the CLI binary before checking its checksum, and `BLUEBOX_TOKEN`
+comes into scope only for the `bluebox ask` step below. The pipeline owner
+provisions the CLI that way, following
+[Install in CI](https://docs.bluebox.ai/cli#install-in-ci) in the CLI
+Reference; don't write or change that provisioning step yourself, and if the
+pipeline has none, say so instead of adding one. The gate
+needs egress to `app.bluebox.ai` (the `bluebox ask` control plane) and your
+Dynatrace tenant host for query traffic. A blocked host means the gate can't
+run.
 
 The query agent honors caller formats — ask for JSON only and the answer is parseable stdout:
 
@@ -347,47 +344,7 @@ different job is a **Bluebox-side agent, not a local skill** — route it throug
 - The `ask` command present — verify with `bluebox ask --help` (exits 0). Don't conclude
   `ask` is absent because `bluebox help` omits it: agent-mode help on CLI builds older than
   v0.42.2 doesn't list it.
-- Only if `bluebox` is **not found**: install it with the standalone
-  installer, but don't pipe it straight into a shell — download it to a file
-  first (`curl -fsSL https://app.bluebox.ai/install.sh -o installer.sh`;
-  Windows equivalents in the [CLI Reference](https://docs.bluebox.ai/cli)),
-  inspect it, then run it. It writes to `~/.bluebox/bin`, but a fresh shell
-  won't have sourced the startup file that puts it on PATH, so
-  `export PATH="$HOME/.bluebox/bin:$PATH"` and re-check `command -v bluebox`
-  afterward. This is fine for **interactive** work, where you're present to
-  drive the setup prompt it launches; an already-resolving `bluebox` is fine
-  as-is too — don't reorder PATH (an older build may shadow the one you were
-  using).
-- **In a CI gate, don't use the standalone installer at all — download and
-  verify the binary directly, against a pin you reviewed, not the download
-  source's own say-so.** The installer downloads the binary with no
-  checksum check of its own and then unconditionally execs it (non-interactively
-  as `bluebox setup` in agent mode, or via a `/dev/tty` prompt otherwise) — there
-  is no point in that flow where an unverified binary hasn't already run. The
-  public `GET /v1/cli/latest?os=&arch=` endpoint gets you the download URL,
-  but don't trust the `sha256` it also returns as your integrity check — a
-  compromised or spoofed response could serve a malicious URL and a matching
-  checksum together. Verify against your own reviewed `BLUEBOX_CLI_SHA256`
-  pin instead, **before** anything runs and **before** `BLUEBOX_TOKEN` is
-  ever exposed:
-
-  ```sh
-  os=linux; arch=amd64   # match the runner — see uname -s / uname -m
-  meta="$(curl -fsSL "https://app.bluebox.ai/v1/cli/latest?os=$os&arch=$arch")" || { echo "cli metadata fetch failed"; exit 1; }
-  url="$(printf '%s' "$meta" | jq -r '.download_url')"
-  mkdir -p "$HOME/.bluebox/bin"
-  bin="$HOME/.bluebox/bin/bluebox"
-  curl -fsSL "$url" -o "$bin"                                # no token in scope; nothing executed yet
-  echo "${BLUEBOX_CLI_SHA256:?pin required}  $bin" | sha256sum -c - || exit 1
-  chmod +x "$bin"
-  export PATH="$HOME/.bluebox/bin:$PATH"
-  ```
-
-  `BLUEBOX_CLI_SHA256` is a pin you set: review the binary once (e.g. compute
-  its checksum from a `bluebox update` you ran and trusted yourself), record
-  it as a CI secret, and re-review and re-pin only when you intentionally
-  bump the CLI version — never by copying whatever the metadata endpoint
-  reports at gate time, since that reintroduces the single-source-of-truth
-  problem this check exists to avoid. This is the first point the binary is
-  trusted enough to run — nothing above it ever executes the binary. Only
-  after the check passes do you expose `BLUEBOX_TOKEN` for the `ask` step.
+- Only if `bluebox` is **not found**: don't install it yourself. Stop, tell the user
+  the CLI is missing, and point them to [Install](https://docs.bluebox.ai/cli) in the
+  CLI Reference. If they just installed it and your shell still can't find it, ask
+  them to open a new shell or tell you where it is. In a CI gate, see **Scripted use**.
