@@ -2,11 +2,21 @@
 name: bluebox-production-query
 description: 'Use BEFORE designing, planning, or implementing any change to a live, Bluebox-visible service — and when in plan mode about to present a plan (before ExitPlanMode) that touches such a service, to assess the plan against monitoring. Provides production context via `bluebox ask`. Triggers: "what does production look like", "current error rate", "p95/p99 latency", "who calls this service", "downstream dependencies", "can it handle the load", "production baseline", "is there an active problem", "what SLOs are at risk", "bluebox ask", "stack trace", "this error in production", "500s", "exception in prod", "users are reporting", "is this safe to merge", "review this change", "plan this change", "in plan mode", "before ExitPlanMode", "assess this plan", "check the plan against monitoring", "ship today", "implement/refactor/migrate a deployed service", "before we deploy", "roll out".'
 metadata:
-  version: "0.8.1"
+  version: "0.9.0"
   former-names: "production-query"
 ---
 
 # Production Query
+
+## Reaching Bluebox
+
+Before your first Bluebox call, pick one path, in this order:
+
+1. **MCP.** You have a Bluebox MCP server's `ask` tool. Send each `bluebox ask` below to it, each flag as the parameter of the same meaning. To scope to a service, call `list_services` with the git origin as `repository_url`; if that finds none or rejects the origin, call it with `search` set to the service name. Pass the match's `entity_id`. For `--task-id`, read the report with `get_investigation` first. While `status` is `running`, call `get_ask_result` with the `conversation_id`: another `ask` starts a second run. Record `meta.window` and `conversation_id` with each verdict.
+2. **CLI.** `bluebox ask --help` exits 0. Run the commands as written.
+3. **Neither.** Stop and tell the user in one line how to connect: the Bluebox plugin or [MCP server](https://docs.bluebox.ai/mcp-server), or the [CLI](https://docs.bluebox.ai/cli). Never invent an answer.
+
+Scripts, hooks and CI gates keep the CLI, because they cannot call an MCP tool.
 
 ## When to use
 Before you design or implement anything touching a **live service**, and whenever a bug
@@ -315,7 +325,8 @@ default GitHub Actions shells lack.)
 - **Headless agents:** skill frontmatter grants no tool permissions — a headless Claude Code
   run needs `--allowedTools "Bash(bluebox ask:*)" "Bash(bluebox services:*)"` (or a
   `settings.json` grant) or every `bluebox ask` stalls on approval. Not `Bash(bluebox:*)`:
-  that also runs `bluebox setup`, `update` and `uninstall` unprompted.
+  that also runs `bluebox setup`, `update` and `uninstall` unprompted. Over MCP, allow the
+  Bluebox MCP tools instead.
 - A gate verdict is still a verdict — record it (see **Record the verdict**).
 
 ## Boundaries
@@ -340,12 +351,11 @@ different job is a **Bluebox-side agent, not a local skill** — route it throug
   and ask the user — don't guess.
 
 ## Prerequisites
-- `bluebox auth login` completed, or `BLUEBOX_TOKEN` set (see Command).
+- A path from **Reaching Bluebox**: the Bluebox MCP server, or the CLI with
+  `bluebox auth login` completed or `BLUEBOX_TOKEN` set (see Command).
 - Bluebox connected to a Dynatrace environment receiving the service's telemetry.
-- The `ask` command present — verify with `bluebox ask --help` (exits 0). Don't conclude
-  `ask` is absent because `bluebox help` omits it: agent-mode help on CLI builds older than
-  v0.42.2 doesn't list it.
-- Only if `bluebox` is **not found**: don't install it yourself. Stop, tell the user
-  the CLI is missing, and point them to [Install](https://docs.bluebox.ai/cli) in the
-  CLI Reference. If they just installed it and your shell still can't find it, ask
-  them to open a new shell or tell you where it is. In a CI gate, see **Scripted use**.
+- Don't conclude `ask` is absent because `bluebox help` omits it: agent-mode help on CLI
+  builds older than v0.42.2 doesn't list it. `bluebox ask --help` is the test.
+- With neither path, don't install the CLI yourself. If the user just installed it and your
+  shell still can't find it, ask them to open a new shell or tell you where it is. In a CI
+  gate, see **Scripted use**.

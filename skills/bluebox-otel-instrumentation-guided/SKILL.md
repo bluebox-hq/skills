@@ -11,7 +11,7 @@ compatibility: >
   Claude Code (asks through AskUserQuestion); other coding agents ask numbered questions.
   Needs bluebox-otel-instrumentation installed in the same skills directory.
 metadata:
-  version: "1.4.3"
+  version: "1.5.0"
   base: bluebox-otel-instrumentation
   base_min_version: "3.9.1"
   audience: coding-agent
@@ -159,3 +159,13 @@ then, in this order:
    committed with the code, and its Handover section is the PR body. Done leaves the
    changes uncommitted.
 3. One line: the PR URL, or where the changes and the run file are.
+
+## Reaching Bluebox
+
+Before your first Bluebox call, pick one path, in this order:
+
+1. **MCP.** You have a Bluebox MCP server's `ask` tool. Send each `bluebox ask` below to it, each flag as the parameter of the same meaning. To scope to a service, call `list_services` with the git origin as `repository_url`; if that finds none or rejects the origin, call it with `search` set to the service name. Pass the match's `entity_id`. For `--task-id`, read the report with `get_investigation` first. While `status` is `running`, call `get_ask_result` with the `conversation_id`: another `ask` starts a second run. Record `meta.window` and `conversation_id` with each verdict.
+2. **CLI.** `bluebox ask --help` exits 0. Run the commands as written.
+3. **Neither.** Stop and tell the user in one line how to connect: the Bluebox plugin or [MCP server](https://docs.bluebox.ai/mcp-server), or the [CLI](https://docs.bluebox.ai/cli). Never invent an answer.
+
+Scripts, hooks and CI gates keep the CLI, because they cannot call an MCP tool.

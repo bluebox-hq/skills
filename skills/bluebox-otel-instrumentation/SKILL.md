@@ -12,7 +12,7 @@ description: >
   tracing", "OTel setup", "wire up telemetry for Bluebox".
 compatibility: Coding agents (Claude Code, Cursor, Windsurf, Copilot, Kiro, OpenCode, Codex)
 metadata:
-  version: "3.11.4"
+  version: "3.12.0"
   audience: coding-agent
 ---
 
@@ -188,7 +188,8 @@ exactly as this line does.
    never poll, and after exit 2 verification is `blocked` unless the environment carries an
    endpoint; a CLI below v0.84.0 is the user's to update, its exit 2 provisional. Never create
    `.env.otel.bluebox-template`; one an older CLI left is no input: leave it as it is, never read
-   the endpoint from it, never wire it as an env file.
+   the endpoint from it, never wire it as an env file. No CLI: as exit 2. MCP or CLI: `## Reaching
+   Bluebox` of `../bluebox-overview/SKILL.md`; over MCP, send `verify.sh ask --print`'s prompt to `ask`.
 3. Wire the selected services **one at a time**: wire, build-verify (Hard rule 9), record
    ([state-resume.md](references/state-resume.md)), then the next. Update the start
    command and deployment config (compose/Helm/process manager) with non-secret defaults

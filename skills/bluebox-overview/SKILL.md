@@ -3,12 +3,22 @@ name: bluebox-overview
 description: Teaches a coding agent what Bluebox is, when to invoke it, and how to phrase requests so the agent picks the right Bluebox skill — investigation, instrumentation, or monitoring.
 compatibility: Installed into coding agents by `bluebox setup`; compatible with Claude Code, Cursor, Windsurf, GitHub Copilot, Kiro, OpenCode, and Codex.
 metadata:
-  version: '1.4'
+  version: '1.5'
 ---
 
 # Bluebox Overview
 
 Bluebox is an observability agent that connects your codebase, CI/CD pipeline, and Dynatrace observability data. It runs AI-driven agents that investigate production incidents, instrument services, and verify deployments — without requiring manual context switching between your IDE, dashboards, and runbooks.
+
+## Reaching Bluebox
+
+Before your first Bluebox call, pick one path, in this order:
+
+1. **MCP.** You have a Bluebox MCP server's `ask` tool. Send each `bluebox ask` below to it, each flag as the parameter of the same meaning. To scope to a service, call `list_services` with the git origin as `repository_url`; if that finds none or rejects the origin, call it with `search` set to the service name. Pass the match's `entity_id`. For `--task-id`, read the report with `get_investigation` first. While `status` is `running`, call `get_ask_result` with the `conversation_id`: another `ask` starts a second run. Record `meta.window` and `conversation_id` with each verdict.
+2. **CLI.** `bluebox ask --help` exits 0. Run the commands as written.
+3. **Neither.** Stop and tell the user in one line how to connect: the Bluebox plugin or [MCP server](https://docs.bluebox.ai/mcp-server), or the [CLI](https://docs.bluebox.ai/cli). Never invent an answer.
+
+Scripts, hooks and CI gates keep the CLI, because they cannot call an MCP tool.
 
 ## When to use Bluebox
 
@@ -56,4 +66,4 @@ Rule of thumb: run `bluebox ask` yourself for **questions about Bluebox**, and u
 
 ## Setup
 
-If initial setup is needed, run `bluebox setup` and follow its instructions.
+With the CLI and no skills or connection yet, run `bluebox setup` and follow its instructions. With neither the MCP server nor the CLI, see **Reaching Bluebox**.
