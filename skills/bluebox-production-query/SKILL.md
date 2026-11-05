@@ -2,7 +2,7 @@
 name: bluebox-production-query
 description: 'Use BEFORE designing, planning, or implementing any change to a live, Bluebox-visible service — and when in plan mode about to present a plan (before ExitPlanMode) that touches such a service, to assess the plan against monitoring. Provides production context via `bluebox ask`. Triggers: "what does production look like", "current error rate", "p95/p99 latency", "who calls this service", "downstream dependencies", "can it handle the load", "production baseline", "is there an active problem", "what SLOs are at risk", "bluebox ask", "stack trace", "this error in production", "500s", "exception in prod", "users are reporting", "is this safe to merge", "review this change", "plan this change", "in plan mode", "before ExitPlanMode", "assess this plan", "check the plan against monitoring", "ship today", "implement/refactor/migrate a deployed service", "before we deploy", "roll out".'
 metadata:
-  version: "0.9.0"
+  version: "0.9.1"
   former-names: "production-query"
 ---
 
@@ -10,13 +10,7 @@ metadata:
 
 ## Reaching Bluebox
 
-Before your first Bluebox call, pick one path, in this order:
-
-1. **MCP.** You have a Bluebox MCP server's `ask` tool. Send each `bluebox ask` below to it, each flag as the parameter of the same meaning. To scope to a service, call `list_services` with the git origin as `repository_url`; if that finds none or rejects the origin, call it with `search` set to the service name. Pass the match's `entity_id`. For `--task-id`, read the report with `get_investigation` first. While `status` is `running`, call `get_ask_result` with the `conversation_id`: another `ask` starts a second run. Record `meta.window` and `conversation_id` with each verdict.
-2. **CLI.** `bluebox ask --help` exits 0. Run the commands as written.
-3. **Neither.** Stop and tell the user in one line how to connect: the Bluebox plugin or [MCP server](https://docs.bluebox.ai/mcp-server), or the [CLI](https://docs.bluebox.ai/cli). Never invent an answer.
-
-Scripts, hooks and CI gates keep the CLI, because they cannot call an MCP tool.
+Use the Bluebox MCP tools if you have them, passing each `bluebox ask` flag as the `ask` parameter of the same meaning. Else, if `bluebox ask --help` exits 0, run the commands as written. Else, or when an `ask` fails on sign-in, stop and tell the user in one line how to connect: the [MCP server](https://docs.bluebox.ai/mcp-server) or the [CLI](https://docs.bluebox.ai/cli). Never invent an answer or a verdict.
 
 ## When to use
 Before you design or implement anything touching a **live service**, and whenever a bug
@@ -249,7 +243,8 @@ change about to be implemented), translate the **diff** into production question
 ## Record the verdict — every path
 Record **every** verdict, whatever route produced it: save
 `.bluebox/baseline-<service>-<YYYY-MM-DD-HHMM>.md` with the numbers, the exact window, the
-verdict, and the `conversation: <uuid>`. Date **and time** come from `date -u`, never from
+verdict, and the `conversation: <uuid>`; over MCP, the window is `meta.window` and the id is
+`conversation_id`. Date **and time** come from `date -u`, never from
 memory (time rules in Planning) — two verdicts in one day must not clobber each other. An
 **imminent-ship** verdict is **incomplete without a now-window row**: the last-30-minutes
 numbers (time rules) with their own conversation id, alongside the 24h baseline. Gate runs
@@ -281,6 +276,8 @@ environment supports one) — a scheduled run reports and stops, treats telemetr
 (see Command), and never embeds a token in the schedule definition.
 
 ## Scripted use (CI gates, hooks)
+
+Scripts, hooks and CI gates use the CLI, because they cannot call an MCP tool.
 
 **Provision before you gate — and before the token is in scope.** A gate must
 never run the CLI binary before checking its checksum, and `BLUEBOX_TOKEN`

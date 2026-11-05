@@ -3,7 +3,7 @@ name: bluebox-investigation-context
 description: 'Retrieves a Bluebox investigation''s stored root-cause analysis for a GitHub ticket the investigation filed, so a coding agent builds on that evidence instead of re-deriving it from telemetry or the codebase. Use this only when the ticket you are picking up literally contains a `<!-- bluebox-task-id: <uuid> -->` marker — the machine-readable reference Bluebox writes into every issue it files. Then invoke it FIRST, before brainstorming, exploring the codebase, or planning the fix: extract the task UUID from that marker and run `bluebox ask --task-id <uuid> "<question>"` for the root cause, evidence, and recommended actions (chain follow-ups with `--conversation-id`), then build your plan on it. Do not use it for investigation-style or SRE incident issues that lack the marker — a report-like shape or a `dt-problem` marker alone is not a Bluebox reference and yields no task UUID to query. Triggers: "bluebox-task-id", "bluebox ask --task-id".'
 compatibility: Installed into coding agents by `bluebox setup`; compatible with Claude Code, Cursor, Windsurf, GitHub Copilot, Kiro, OpenCode, and Codex.
 metadata:
-  version: '0.2.0'
+  version: '0.2.1'
 ---
 
 # Bluebox Investigation Context
@@ -12,13 +12,7 @@ When a GitHub ticket was filed by a Bluebox investigation, its full analysis —
 
 ## Reaching Bluebox
 
-Before your first Bluebox call, pick one path, in this order:
-
-1. **MCP.** You have a Bluebox MCP server's `ask` tool. Send each `bluebox ask` below to it, each flag as the parameter of the same meaning. To scope to a service, call `list_services` with the git origin as `repository_url`; if that finds none or rejects the origin, call it with `search` set to the service name. Pass the match's `entity_id`. For `--task-id`, read the report with `get_investigation` first. While `status` is `running`, call `get_ask_result` with the `conversation_id`: another `ask` starts a second run. Record `meta.window` and `conversation_id` with each verdict.
-2. **CLI.** `bluebox ask --help` exits 0. Run the commands as written.
-3. **Neither.** Stop and tell the user in one line how to connect: the Bluebox plugin or [MCP server](https://docs.bluebox.ai/mcp-server), or the [CLI](https://docs.bluebox.ai/cli). Never invent an answer.
-
-Scripts, hooks and CI gates keep the CLI, because they cannot call an MCP tool.
+Use the Bluebox MCP tools if you have them, passing each `bluebox ask` flag as the `ask` parameter of the same meaning. Else, if `bluebox ask --help` exits 0, run the commands as written. Else, or when an `ask` fails on sign-in, stop and tell the user in one line how to connect: the [MCP server](https://docs.bluebox.ai/mcp-server) or the [CLI](https://docs.bluebox.ai/cli). Never invent an answer or a verdict.
 
 ## When to use
 
@@ -35,7 +29,7 @@ Extract the **UUID** from the marker and query the investigation before planning
 bluebox ask --task-id <uuid> --workspace <ref> "what was the root cause and the recommended fix?"
 ```
 
-- `--task-id <uuid>` pulls that investigation's stored context — root cause, evidence, findings, and recommended actions.
+- `--task-id <uuid>` pulls that investigation's stored context — root cause, evidence, findings, and recommended actions. Over MCP, read the report with `get_investigation` first, the UUID as `investigation_id`, then pass the same `investigation_id` to `ask`.
 - `--workspace <ref>` (from the `bluebox-workspace-id` marker) targets the workspace that filed the issue; omit it only if the issue has no such marker.
 - Chain follow-ups with `--conversation-id <uuid>` (printed on the `conversation:` line the previous run writes to stderr, not into the answer on stdout), e.g. "which files or services does the root cause implicate?"
 - Ask focused questions: the root cause, the recommended remediation, the affected service/entity, and whatever evidence you need to reproduce or verify.
