@@ -1,0 +1,17 @@
+{
+  "name": "bluebox",
+  "owner": {
+    "name": "Bluebox",
+    "url": "https://bluebox.ai"
+  },
+  "metadata": {
+    "description": "Bluebox skills for coding agents."
+  },
+  "plugins": [
+    {
+      "name": "bluebox",
+      "description": "Connect your coding agent to Bluebox: production context, investigation root causes, and OpenTelemetry instrumentation.",
+      "source": "./"
+    }
+  ]
+}

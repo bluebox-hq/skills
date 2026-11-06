@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "bluebox": {
+      "type": "http",
+      "url": "https://app.bluebox.ai/v1/mcp"
+    }
+  }
+}

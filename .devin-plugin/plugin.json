@@ -1,0 +1,20 @@
+{
+  "name": "bluebox",
+  "displayName": "Bluebox",
+  "description": "Check production health before changing a service, build fixes on Bluebox root-cause investigations, and add OpenTelemetry",
+  "shortDescription": "Production context and root causes",
+  "setup": {
+    "notice": "The Bluebox skills call the bluebox CLI, so install it and sign in where Devin runs."
+  },
+  "homepage": "https://bluebox.ai",
+  "repository": "https://github.com/bluebox-hq/skills",
+  "logo": "assets/bluebox-logo.png",
+  "keywords": [
+    "Monitoring & Analytics"
+  ],
+  "mcpServers": {
+    "bluebox": {
+      "url": "https://app.bluebox.ai/v1/mcp"
+    }
+  }
+}

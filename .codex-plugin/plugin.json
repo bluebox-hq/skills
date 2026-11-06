@@ -1,0 +1,46 @@
+{
+  "name": "bluebox",
+  "version": "1.0.0",
+  "description": "Connect your coding agent to Bluebox, the observability agent for AI-native development. Check production before planning a change, pick up a Bluebox investigation's root cause, and add OpenTelemetry to your services. Requires a Bluebox account and the bluebox CLI.",
+  "author": {
+    "name": "Bluebox",
+    "url": "https://bluebox.ai"
+  },
+  "homepage": "https://bluebox.ai",
+  "repository": "https://github.com/bluebox-hq/skills",
+  "license": "Apache-2.0",
+  "keywords": [
+    "bluebox",
+    "observability",
+    "opentelemetry",
+    "production",
+    "monitoring"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Bluebox",
+    "shortDescription": "Production context for agents",
+    "longDescription": "Bring Bluebox into Codex. Check how a service behaves in production before planning a change, pick up the root cause of a Bluebox investigation, and add OpenTelemetry to your services. Includes five Bluebox skills and the Bluebox MCP server, which you sign in to with OAuth on first use. Requires a Bluebox account; some skills also use the bluebox CLI.",
+    "developerName": "Bluebox",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://bluebox.ai",
+    "supportURL": "https://docs.bluebox.ai/getting-help",
+    "privacyPolicyURL": "https://bluebox.ai/privacy",
+    "termsOfServiceURL": "https://bluebox.ai/terms",
+    "defaultPrompt": [
+      "Check production for this service before we change it",
+      "Load the root cause of my latest Bluebox investigation",
+      "Add OpenTelemetry to this service and send its telemetry to Bluebox"
+    ],
+    "composerIcon": "./assets/bluebox-logo.png",
+    "logo": "./assets/bluebox-logo.png",
+    "screenshots": [],
+    "brandColor": "#0051FF"
+  }
+}

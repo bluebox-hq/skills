@@ -1,0 +1,26 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.bluebox-hq/bluebox",
+  "title": "Bluebox",
+  "description": "Ask Bluebox about live service health, errors, latency, dependencies and investigation root causes.",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/bluebox-hq/skills",
+    "source": "github",
+    "id": "1437013963"
+  },
+  "websiteUrl": "https://docs.bluebox.ai/mcp-server",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/bluebox-hq/skills/main/assets/bluebox-logo.png",
+      "mimeType": "image/png",
+      "sizes": ["512x512"]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://app.bluebox.ai/v1/mcp"
+    }
+  ]
+}

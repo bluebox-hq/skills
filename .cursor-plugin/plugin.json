@@ -1,0 +1,11 @@
+{
+  "name": "bluebox",
+  "displayName": "Bluebox",
+  "description": "Connect your coding agent to Bluebox, the observability agent for AI-native development. Check production before planning a change, pick up a Bluebox investigation's root cause, and add OpenTelemetry to your services. Requires a Bluebox account and the bluebox CLI.",
+  "author": { "name": "Bluebox", "url": "https://bluebox.ai" },
+  "homepage": "https://bluebox.ai",
+  "repository": "https://github.com/bluebox-hq/skills",
+  "license": "Apache-2.0",
+  "keywords": ["bluebox", "observability", "opentelemetry", "production", "monitoring"],
+  "logo": "assets/bluebox-logo.png"
+}

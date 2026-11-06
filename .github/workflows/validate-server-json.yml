@@ -1,0 +1,35 @@
+name: Validate server.json
+
+on:
+  pull_request:
+    paths: ["server.json"]
+  push:
+    branches: [main]
+    paths: ["server.json"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  MCP_PUBLISHER_URL: https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1/mcp-publisher_linux_amd64.tar.gz
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # The registry grants only io.github.<owner>/* and compares case-sensitively,
+      # so a wrong-case name would only fail at publish time with a 403.
+      - name: Check server.json name matches the GitHub namespace
+        run: |
+          expected="io.github.${GITHUB_REPOSITORY_OWNER}/"
+          actual=$(jq -r .name server.json)
+          case "$actual" in
+            "$expected"*) echo "OK   server.json (name): \"$actual\"" ;;
+            *) echo "FAIL server.json (name): \"$actual\" must start with \"$expected\""; exit 1 ;;
+          esac
+      - name: Validate server.json for the MCP registry
+        run: |
+          curl -fsSL "$MCP_PUBLISHER_URL" | tar xz mcp-publisher
+          ./mcp-publisher validate
