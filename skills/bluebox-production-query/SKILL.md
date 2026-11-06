@@ -2,7 +2,7 @@
 name: bluebox-production-query
 description: 'Use BEFORE designing, planning, or implementing any change to a live, Bluebox-visible service — and when in plan mode about to present a plan (before ExitPlanMode) that touches such a service, to assess the plan against monitoring. Provides production context via `bluebox ask`. Triggers: "what does production look like", "current error rate", "p95/p99 latency", "who calls this service", "downstream dependencies", "can it handle the load", "production baseline", "is there an active problem", "what SLOs are at risk", "bluebox ask", "stack trace", "this error in production", "500s", "exception in prod", "users are reporting", "is this safe to merge", "review this change", "plan this change", "in plan mode", "before ExitPlanMode", "assess this plan", "check the plan against monitoring", "ship today", "implement/refactor/migrate a deployed service", "before we deploy", "roll out".'
 metadata:
-  version: "0.9.1"
+  version: "0.9.2"
   former-names: "production-query"
 ---
 
@@ -243,11 +243,11 @@ change about to be implemented), translate the **diff** into production question
 ## Record the verdict — every path
 Record **every** verdict, whatever route produced it: save
 `.bluebox/baseline-<service>-<YYYY-MM-DD-HHMM>.md` with the numbers, the exact window, the
-verdict, and the `conversation: <uuid>`; over MCP, the window is `meta.window` and the id is
-`conversation_id`. Date **and time** come from `date -u`, never from
-memory (time rules in Planning) — two verdicts in one day must not clobber each other. An
-**imminent-ship** verdict is **incomplete without a now-window row**: the last-30-minutes
-numbers (time rules) with their own conversation id, alongside the 24h baseline. Gate runs
+verdict, and the `conversation: <uuid>`; over MCP, each row's window is its own `ask`
+result's `meta.window` in full, not the range asked for, and the id is `conversation_id`.
+Date **and time** come from `date -u`, never from memory — two verdicts a day must not
+clobber each other. An **imminent-ship** verdict is **incomplete without a now-window row**:
+its numbers, window and conversation id, beside the 24h baseline. Gate runs
 count — at minimum keep the JSON line + window + conversation id. When the change goes out
 in a PR, add the same content as a **"Production evidence"** section in the PR description —
 it's the comparison anchor for post-deploy verification.
