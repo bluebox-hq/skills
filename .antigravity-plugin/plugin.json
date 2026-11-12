@@ -1,0 +1,27 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "name": "bluebox",
+  "displayName": "Bluebox",
+  "version": "1.0.0",
+  "description": "Connect your coding agent to Bluebox, the observability agent for AI-native development. Check production before planning a change, pick up a Bluebox investigation's root cause, and add OpenTelemetry to your services. Requires a Bluebox account.",
+  "logo": "assets/bluebox-logo.png",
+  "suggestedPrompts": [
+    "Check production for this service before we change it",
+    "Load the root cause of my latest Bluebox investigation",
+    "Add OpenTelemetry to this service and send its telemetry to Bluebox"
+  ],
+  "author": {
+    "name": "Bluebox",
+    "url": "https://bluebox.ai"
+  },
+  "homepage": "https://bluebox.ai",
+  "repository": "https://github.com/bluebox-hq/skills",
+  "license": "Apache-2.0",
+  "keywords": [
+    "bluebox",
+    "observability",
+    "opentelemetry",
+    "production",
+    "monitoring"
+  ]
+}

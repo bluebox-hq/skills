@@ -10,6 +10,10 @@ To suggest a change to a skill, please [open an issue](https://github.com/bluebo
 
 Everything outside `skills/` lives only in this repository and welcomes pull requests. For anything beyond a small docs fix, please open an issue first.
 
+## Publishing
+
+[PUBLISHING.md](PUBLISHING.md) explains how the Bluebox team publishes the MCP server to the MCP Registry, how to automate that, and how the plugins reach each marketplace.
+
 ## Reporting issues
 
 To report a bug, suggest a new skill or request a change to an existing one, please [open an issue](https://github.com/bluebox-hq/skills/issues/new).

@@ -1,0 +1,30 @@
+{
+  "name": "bluebox",
+  "description": "Connect your coding agent to Bluebox, the observability agent for AI-native development. Check production before planning a change, pick up a Bluebox investigation's root cause, and add OpenTelemetry to your services. Requires a Bluebox account.",
+  "author": {
+    "name": "Bluebox",
+    "url": "https://bluebox.ai"
+  },
+  "homepage": "https://bluebox.ai",
+  "repository": "https://github.com/bluebox-hq/skills",
+  "license": "Apache-2.0",
+  "privacyPolicyUrl": "https://bluebox.ai/privacy",
+  "termsOfServiceUrl": "https://bluebox.ai/terms",
+  "supportUrl": "https://docs.bluebox.ai/getting-help",
+  "documentationUrl": "https://docs.bluebox.ai/mcp-server",
+  "icon": "./assets/bluebox-logo.png",
+  "mcpServers": {
+    "bluebox": {
+      "type": "http",
+      "url": "https://app.bluebox.ai/v1/mcp",
+      "headers": { "X-Bluebox-Install": "claude-code-plugin" }
+    }
+  },
+  "keywords": [
+    "bluebox",
+    "observability",
+    "opentelemetry",
+    "production",
+    "monitoring"
+  ]
+}

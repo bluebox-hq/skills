@@ -1,0 +1,17 @@
+{
+  "name": "bluebox",
+  "owner": {
+    "name": "Bluebox",
+    "url": "https://bluebox.ai"
+  },
+  "metadata": {
+    "description": "Production context for agents"
+  },
+  "plugins": [
+    {
+      "name": "bluebox",
+      "description": "Connect your coding agent to Bluebox, the observability agent for AI-native development. Check production before planning a change, pick up a Bluebox investigation's root cause, and add OpenTelemetry to your services. Requires a Bluebox account.",
+      "source": "./"
+    }
+  ]
+}
