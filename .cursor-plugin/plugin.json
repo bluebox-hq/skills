@@ -7,5 +7,12 @@
   "repository": "https://github.com/bluebox-hq/skills",
   "license": "Apache-2.0",
   "keywords": ["bluebox", "observability", "opentelemetry", "production", "monitoring"],
-  "logo": "assets/bluebox-logo.png"
+  "logo": "assets/bluebox-logo.png",
+  "mcpServers": {
+    "bluebox": {
+      "type": "http",
+      "url": "https://app.bluebox.ai/v1/mcp",
+      "headers": { "X-Bluebox-Install": "cursor-plugin" }
+    }
+  }
 }
