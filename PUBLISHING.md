@@ -10,12 +10,11 @@ The server sets no headers, so clients sign in to Bluebox through OAuth.
 
 ### Publish from CI
 
-[publish-mcp.yml](.github/workflows/publish-mcp.yml) publishes `server.json` when someone pushes an `mcp-v*` tag. It signs in with GitHub OIDC, so it needs no stored secret and no owner's token. Before it publishes, it checks that the tagged commit is on `main` and that the tag matches `version` in `server.json`.
+[publish-mcp.yml](.github/workflows/publish-mcp.yml) publishes `server.json` when someone pushes an `mcp-v*` tag. It signs in with GitHub OIDC, so it needs no stored secret and no owner's token. First it validates `server.json` and checks that the tagged commit is on `main` and that the tag matches `version` in `server.json`. Then the publish job waits for a reviewer of the `mcp-registry-publish` environment.
 
-Set up once, before the first tag:
+Set up once, before the first tag: in **Settings → Environments**, create `mcp-registry-publish`, add required reviewers and turn on **Prevent self-review**. Under **Deployment branches and tags**, allow only tags that match `mcp-v*`. If a workflow names an environment that doesn't exist, GitHub creates it on the first run without protection rules.
 
-1. **Create the environment.** In **Settings → Environments**, create `mcp-registry-publish` and add required reviewers. The OIDC token can publish anything under `io.github.bluebox-hq/*`, not only this server. If a workflow names an environment that doesn't exist, GitHub creates it on the first run without protection rules. Under **Deployment branches and tags**, allow only tags that match `mcp-v*`.
-2. **Limit who can create `mcp-v*` tags.** Add a tag ruleset for `mcp-v*`, because anyone who can push one starts a publish, and then only the environment's reviewers stand in the way. Leave `v*` tags alone: the skills sync pushes a `v<release>` tag on every Bluebox release.
+The reviewer guards this workflow only, not the namespace. The registry gives an OIDC token from any GitHub Actions workflow in a `bluebox-hq` repository the right to publish anything under `io.github.bluebox-hq/*`, and it doesn't check the repository, branch or environment. So anyone who can push a workflow to a `bluebox-hq` repository can publish. Give write access to `bluebox-hq` repositories only to people you'd trust to publish.
 
 To release:
 
@@ -35,7 +34,7 @@ To release:
 
 5. First publish only: email `partnerships@github.com` and ask them to list `io.github.bluebox-hq/bluebox` on github.com/mcp. GitHub curates that list. After the first listing, new versions sync automatically.
 
-The skills sync replaces only `skills/`, so it never changes `server.json` or pushes an `mcp-v*` tag. When you update `mcp-publisher`, update `MCP_PUBLISHER_VERSION` and `MCP_PUBLISHER_SHA256` together, in both this workflow and [validate-server-json.yml](.github/workflows/validate-server-json.yml).
+The skills sync replaces only `skills/`, so it never changes `server.json` or pushes an `mcp-v*` tag. Both workflows install `mcp-publisher` through [install-mcp-publisher](.github/actions/install-mcp-publisher/action.yml). When you update it, change `MCP_PUBLISHER_VERSION` and `MCP_PUBLISHER_SHA256` there together.
 
 Don't run `mcp-publisher status` to check a publish. It changes the lifecycle state of the published server.
 

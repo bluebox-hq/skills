@@ -12,7 +12,7 @@ Everything outside `skills/` lives only in this repository and welcomes pull req
 
 ## Publishing
 
-[PUBLISHING.md](PUBLISHING.md) explains how the Bluebox team publishes the MCP server to the MCP Registry, how to automate that, and how the plugins reach each marketplace.
+[PUBLISHING.md](PUBLISHING.md) explains how the Bluebox team publishes the MCP server to the MCP Registry and how the plugins reach each marketplace.
 
 ## Reporting issues
 
