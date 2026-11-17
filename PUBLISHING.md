@@ -8,30 +8,25 @@ How the Bluebox team publishes this repository to plugin marketplaces and regist
 
 The server sets no headers, so clients sign in to Bluebox through OAuth.
 
-### Publish by hand
+### Publish from CI
 
-You need to be an **owner** of the `bluebox-hq` GitHub organization. The registry grants the `io.github.bluebox-hq/*` namespace only to org owners; membership isn't enough.
+[publish-mcp.yml](.github/workflows/publish-mcp.yml) publishes `server.json` when someone pushes an `mcp-v*` tag. It signs in with GitHub OIDC, so it needs no stored secret and no owner's token. Before it publishes, it checks that the tagged commit is on `main` and that the tag matches `version` in `server.json`.
 
-1. Install `mcp-publisher`:
+Set up once, before the first tag:
 
-   ```bash
-   brew install mcp-publisher
-   ```
+1. **Create the environment.** In **Settings → Environments**, create `mcp-registry-publish` and add required reviewers. The OIDC token can publish anything under `io.github.bluebox-hq/*`, not only this server. If a workflow names an environment that doesn't exist, GitHub creates it on the first run without protection rules. Under **Deployment branches and tags**, allow only tags that match `mcp-v*`.
+2. **Limit who can create `mcp-v*` tags.** Add a tag ruleset for `mcp-v*`, because anyone who can push one starts a publish, and then only the environment's reviewers stand in the way. Leave `v*` tags alone: the skills sync pushes a `v<release>` tag on every Bluebox release.
 
-   Or download a release binary from [modelcontextprotocol/registry](https://github.com/modelcontextprotocol/registry/releases).
+To release:
 
-2. Bump `version` in `server.json`. The registry rejects a version that is already published. Then merge the change to `main`.
-
-3. On an up-to-date `main`, validate, sign in and publish:
+1. Bump `version` in `server.json` (for example to `1.0.1`) and merge the change to `main`. The registry rejects a version that is already published. Skip this step for the first publish, which uses `1.0.0`.
+2. Tag that commit on `main` and push the tag:
 
    ```bash
-   mcp-publisher validate
-   mcp-publisher login github --token "$GITHUB_TOKEN"
-   mcp-publisher publish
+   git tag mcp-v1.0.1 && git push origin mcp-v1.0.1
    ```
 
-   Sign in with a personal access token. The browser login (`login github` without `--token`) can't publish to an organization namespace yet ([modelcontextprotocol/registry#1468](https://github.com/modelcontextprotocol/registry/issues/1468)). The token must let the registry read your org role: a classic token with the `read:org` scope, or a fine-grained token for `bluebox-hq` with **Members: Read**.
-
+3. A reviewer approves the job in **Actions**.
 4. Check that the new version is live:
 
    ```bash
@@ -40,70 +35,29 @@ You need to be an **owner** of the `bluebox-hq` GitHub organization. The registr
 
 5. First publish only: email `partnerships@github.com` and ask them to list `io.github.bluebox-hq/bluebox` on github.com/mcp. GitHub curates that list. After the first listing, new versions sync automatically.
 
+The skills sync replaces only `skills/`, so it never changes `server.json` or pushes an `mcp-v*` tag. When you update `mcp-publisher`, update `MCP_PUBLISHER_VERSION` and `MCP_PUBLISHER_SHA256` together, in both this workflow and [validate-server-json.yml](.github/workflows/validate-server-json.yml).
+
 Don't run `mcp-publisher status` to check a publish. It changes the lifecycle state of the published server.
 
-If `publish` fails with HTTP 403, the name doesn't match a namespace you own. The name must start with `io.github.bluebox-hq/`, and the comparison is case-sensitive. Check that you're an owner of `bluebox-hq` and that your token can read your org role.
+If `publish` fails with HTTP 403, the name doesn't match the namespace. The name must start with `io.github.bluebox-hq/`, and the comparison is case-sensitive.
 
-### Automate publishing later
+### Publish by hand
 
-[validate-server-json.yml](.github/workflows/validate-server-json.yml) already validates `server.json` on every pull request that changes it. To publish from CI as well, add a workflow that signs in with GitHub OIDC. OIDC needs no stored secret.
+Use this only if the workflow can't run. You need to be an **owner** of the `bluebox-hq` GitHub organization: the registry grants the `io.github.bluebox-hq/*` namespace only to org owners, and membership isn't enough.
 
-Before you add the workflow:
+1. Install `mcp-publisher` (`brew install mcp-publisher`, or a release binary from [modelcontextprotocol/registry](https://github.com/modelcontextprotocol/registry/releases)).
+2. Bump `version` in `server.json` and merge the change to `main`.
+3. On an up-to-date `main`, validate, sign in and publish:
 
-1. **Create the environment first.** In **Settings → Environments**, create `mcp-registry-publish` and add required reviewers. The OIDC token can publish anything under `io.github.bluebox-hq/*`, not only this server. If a workflow names an environment that doesn't exist, GitHub creates it on the first run without protection rules. Under **Deployment branches and tags**, allow only tags that match `mcp-v*`.
-2. **Limit who can create `mcp-v*` tags.** Add a tag ruleset for `mcp-v*`, because anyone who can push one starts a publish. Leave `v*` tags alone: the skills sync pushes a `v<release>` tag on every Bluebox release.
-3. **Decide who bumps the version.** The skills sync replaces only `skills/`, so it doesn't change `server.json`. Either bump `version` and tag by hand, or extend the Bluebox release process to do it.
+   ```bash
+   mcp-publisher validate
+   mcp-publisher login github --token "$GITHUB_TOKEN"
+   mcp-publisher publish
+   ```
 
-Then add `.github/workflows/publish-mcp.yml`:
+   Sign in with a personal access token. The browser login (`login github` without `--token`) can't publish to an organization namespace yet ([modelcontextprotocol/registry#1468](https://github.com/modelcontextprotocol/registry/issues/1468)). The token must let the registry read your org role: a classic token with the `read:org` scope, or a fine-grained token for `bluebox-hq` with **Members: Read**. A 403 here can also mean the token can't read your org role.
 
-```yaml
-name: Publish to MCP Registry
-
-on:
-  push:
-    tags: ["mcp-v*"]
-
-permissions:
-  contents: read
-
-env:
-  MCP_PUBLISHER_VERSION: v1.8.1
-  # sha256 of mcp-publisher_linux_amd64.tar.gz, from registry_1.8.1_checksums.txt in the release
-  MCP_PUBLISHER_SHA256: a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc
-
-jobs:
-  publish:
-    runs-on: ubuntu-latest
-    # The OIDC token can publish to the whole io.github.bluebox-hq/* namespace,
-    # so the job waits for a reviewer of this environment.
-    environment: mcp-registry-publish
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Check the tag matches the server.json version
-        run: |
-          tag="${GITHUB_REF#refs/tags/mcp-v}"
-          actual=$(jq -r .version server.json)
-          if [ "$tag" != "$actual" ]; then
-            echo "FAIL tag mcp-v$tag does not match server.json version \"$actual\""
-            exit 1
-          fi
-      - name: Install mcp-publisher
-        run: |
-          curl -fsSLo mcp-publisher.tar.gz "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz"
-          echo "${MCP_PUBLISHER_SHA256}  mcp-publisher.tar.gz" | sha256sum -c -
-          tar xzf mcp-publisher.tar.gz mcp-publisher
-      - name: Publish server.json
-        run: |
-          ./mcp-publisher login github-oidc
-          ./mcp-publisher publish
-```
-
-To release, bump `version` in `server.json` (for example to `1.0.1`) and merge the change. Then push the matching tag with `git tag mcp-v1.0.1 && git push origin mcp-v1.0.1`, and approve the job in **Actions**. When you update `mcp-publisher`, update `MCP_PUBLISHER_VERSION` and `MCP_PUBLISHER_SHA256` together.
+4. Check the result and, on the first publish, email GitHub as in steps 4 and 5 above.
 
 ## OpenAI plugin directory (ChatGPT and Codex)
 
