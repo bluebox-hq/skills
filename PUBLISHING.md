@@ -130,7 +130,7 @@ After publication, OpenAI scans the MCP server daily. New or changed tools stay 
 
 ## Plugin marketplaces
 
-The plugin files need no publish step. Each client reads them from this repository. The MCP configs send a fixed `X-Bluebox-Install` value so Bluebox can count asks per plugin, and [validate-install-headers.yml](.github/workflows/validate-install-headers.yml) checks those values on every pull request that changes a config:
+The plugin files need no publish step. Each client reads them from this repository:
 
 | Client | Files | Listing |
 |---|---|---|
