@@ -1,7 +1,8 @@
 {
   "mcpServers": {
     "bluebox": {
-      "serverUrl": "https://app.bluebox.ai/v1/mcp"
+      "serverUrl": "https://app.bluebox.ai/v1/mcp",
+      "headers": { "X-Bluebox-Install": "antigravity-plugin" }
     }
   }
 }

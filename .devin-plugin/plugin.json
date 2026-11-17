@@ -11,7 +11,8 @@
   ],
   "mcpServers": {
     "bluebox": {
-      "url": "https://app.bluebox.ai/v1/mcp"
+      "url": "https://app.bluebox.ai/v1/mcp",
+      "headers": { "X-Bluebox-Install": "devin-plugin" }
     }
   }
 }
