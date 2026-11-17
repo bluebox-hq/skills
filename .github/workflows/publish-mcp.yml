@@ -1,0 +1,54 @@
+name: Publish to MCP Registry
+
+on:
+  push:
+    tags: ["mcp-v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  # Validation and the tag checks run before the reviewer is asked to approve.
+  validate:
+    uses: ./.github/workflows/validate-server-json.yml
+
+  check-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check the tagged commit is on main
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "FAIL ${GITHUB_REF_NAME} points at ${GITHUB_SHA}, which is not on main"
+            exit 1
+          fi
+      - name: Check the tag matches the server.json version
+        run: |
+          tag="${GITHUB_REF#refs/tags/mcp-v}"
+          actual=$(jq -r .version server.json)
+          if [ "$tag" != "$actual" ]; then
+            echo "FAIL tag mcp-v$tag does not match server.json version \"$actual\""
+            exit 1
+          fi
+
+  publish:
+    needs: [validate, check-tag]
+    runs-on: ubuntu-latest
+    # Waits for a reviewer. This guards only this workflow: the registry grants
+    # io.github.bluebox-hq/* to an OIDC token from any bluebox-hq workflow.
+    environment: mcp-registry-publish
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/install-mcp-publisher
+      - name: Publish server.json
+        run: |
+          mcp-publisher login github-oidc
+          mcp-publisher publish
