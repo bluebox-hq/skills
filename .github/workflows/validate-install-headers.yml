@@ -1,0 +1,55 @@
+name: Validate install-source headers
+
+on:
+  pull_request:
+    paths:
+      - ".claude-plugin/plugin.json"
+      - ".cursor-plugin/plugin.json"
+      - ".devin-plugin/plugin.json"
+      - "mcp.json"
+      - "mcp_config.json"
+      - ".mcp.json"
+      - ".github/workflows/validate-install-headers.yml"
+  push:
+    branches: [main]
+    paths:
+      - ".claude-plugin/plugin.json"
+      - ".cursor-plugin/plugin.json"
+      - ".devin-plugin/plugin.json"
+      - "mcp.json"
+      - "mcp_config.json"
+      - ".mcp.json"
+      - ".github/workflows/validate-install-headers.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Bluebox counts asks per plugin by this value, so a dropped or copied header miscounts without any error.
+      - name: Check each MCP config sends its install source
+        run: |
+          status=0
+          while read -r file want; do
+            got=$(jq -r '.mcpServers.bluebox.headers["X-Bluebox-Install"] // "none"' "$file")
+            if [ "$got" = "$want" ]; then
+              echo "OK   $file: $got"
+            else
+              echo "FAIL $file: X-Bluebox-Install is \"$got\", want \"$want\""
+              status=1
+            fi
+          done <<'EOF'
+          .claude-plugin/plugin.json claude-code-plugin
+          .cursor-plugin/plugin.json cursor-plugin
+          mcp.json kiro-power
+          .devin-plugin/plugin.json devin-plugin
+          mcp_config.json antigravity-plugin
+          .mcp.json none
+          EOF
+          exit $status
