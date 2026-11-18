@@ -43,6 +43,17 @@ The skills sync replaces only `skills/`, so it never changes `server.json` or pu
 
 If the sign-in fails, `https://bluebox.ai/.well-known/mcp-registry-auth` is missing or doesn't match the private key. If `publish` fails with HTTP 403, the name isn't under `ai.bluebox/`; the comparison is case-sensitive.
 
+### Deprecate the old entry
+
+`io.github.bluebox-hq/bluebox` is the server's earlier name. Deprecate it once `ai.bluebox/mcp` is live:
+
+```bash
+mcp-publisher status --status deprecated --all-versions --yes \
+  --message "Moved to ai.bluebox/mcp" io.github.bluebox-hq/bluebox
+```
+
+This needs a sign-in to the `io.github.bluebox-hq` namespace: `mcp-publisher login github-oidc` from a GitHub Actions workflow in a `bluebox-hq` repository, or `mcp-publisher login github --token` by an owner of the `bluebox-hq` organization, with a classic token that has the `read:org` scope. The registry keeps granting that namespace to any workflow in a `bluebox-hq` repository, so write access to those repositories still means publish access to the old name.
+
 ### Rotate the signing key
 
 1. Generate a new Ed25519 key pair in a temporary folder, outside any checkout:
@@ -65,7 +76,7 @@ If the sign-in fails, `https://bluebox.ai/.well-known/mcp-registry-auth` is miss
 
 4. Store `key.pem` in the team's password manager, then delete `$dir`. Never commit the private key.
 
-Don't publish between steps 2 and 3: the website and the secret hold different keys until both are done. The website caches the file for up to 10 minutes, so the old key keeps working that long after step 2.
+After step 2, wait 10 minutes before you publish with the new key. The website caches the file for that long, so until then the registry may still see the old public key.
 
 ### Publish by hand
 
@@ -80,6 +91,7 @@ Use this only if the workflow can't run. You need the private key from the passw
    mcp-publisher validate
    mcp-publisher login http --domain bluebox.ai --private-key "$MCP_REGISTRY_PRIVATE_KEY"
    mcp-publisher publish
+   unset MCP_REGISTRY_PRIVATE_KEY
    ```
 
    `read -rs` keeps the key out of your shell history.
