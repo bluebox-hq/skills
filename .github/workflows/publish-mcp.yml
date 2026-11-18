@@ -37,18 +37,16 @@ jobs:
   publish:
     needs: [validate, check-tag]
     runs-on: ubuntu-latest
-    # Waits for a reviewer. This guards only this workflow: the registry grants
-    # io.github.bluebox-hq/* to an OIDC token from any bluebox-hq workflow.
+    # The signing key is an environment secret, so the job gets it only after a reviewer approves.
     environment: mcp-registry-publish
-    permissions:
-      id-token: write
-      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/install-mcp-publisher
       - name: Publish server.json
+        env:
+          MCP_REGISTRY_PRIVATE_KEY: ${{ secrets.MCP_REGISTRY_PRIVATE_KEY }}
         run: |
-          mcp-publisher login github-oidc
+          mcp-publisher login http --domain bluebox.ai --private-key "$MCP_REGISTRY_PRIVATE_KEY"
           mcp-publisher publish
