@@ -8,7 +8,7 @@ How the Bluebox team publishes this repository to plugin marketplaces and regist
 
 The server sets no headers, so clients sign in to Bluebox through OAuth.
 
-The `ai.bluebox` namespace comes from the `bluebox.ai` domain. The registry lets whoever holds the private key matching `https://bluebox.ai/.well-known/mcp-registry-auth` publish anything under `ai.bluebox/*`. The website serves that file; it holds only the public key. The earlier entry, `io.github.bluebox-hq/bluebox`, is no longer updated.
+The `ai.bluebox` namespace comes from the `bluebox.ai` domain. To publish, the registry checks a signature against the public key at `https://bluebox.ai/.well-known/mcp-registry-auth`, which the Bluebox website serves. Treat that file like the private key: whoever can change it can publish under `ai.bluebox/*`. The earlier entry, `io.github.bluebox-hq/bluebox`, is no longer updated.
 
 ### Publish from CI
 
@@ -17,7 +17,7 @@ The `ai.bluebox` namespace comes from the `bluebox.ai` domain. The registry lets
 Set up once, before the first tag:
 
 1. In **Settings → Environments**, create `mcp-registry-publish`, add required reviewers and turn on **Prevent self-review**. Under **Deployment branches and tags**, allow only tags that match `mcp-v*`. If a workflow names an environment that doesn't exist, GitHub creates it on the first run without protection rules.
-2. Add the private key to that environment as the secret `MCP_REGISTRY_PRIVATE_KEY`, in hex (see [Rotate the signing key](#rotate-the-signing-key)). An environment secret reaches a job only after the environment's rules pass, so only an approved run can sign in. Repository admins can still skip the review.
+2. Add the private key to that environment as the secret `MCP_REGISTRY_PRIVATE_KEY`, in hex (see [Rotate the signing key](#rotate-the-signing-key)).
 
 To release:
 
@@ -28,58 +28,61 @@ To release:
    git tag mcp-v1.0.2 && git push origin mcp-v1.0.2
    ```
 
-3. A reviewer approves the job in **Actions**.
+3. A reviewer approves the job in **Actions**. Before approving, check that the run's commit is the tagged commit on `main` and that `validate` and `check-tag` passed. The run uses the workflow file from the tagged commit, so a tag on any other commit can run a different workflow.
 4. Check that the new version is live:
 
    ```bash
    curl -s "https://registry.modelcontextprotocol.io/v0.1/servers?search=ai.bluebox/mcp"
    ```
 
-5. First publish only: ask GitHub to list `ai.bluebox/mcp` on github.com/mcp. GitHub curates that list. After the first listing, new versions sync automatically.
+5. First publish only: email `partnerships@github.com` and ask them to list `ai.bluebox/mcp` on github.com/mcp. GitHub curates that list. After the first listing, new versions sync automatically.
 
 The skills sync replaces only `skills/`, so it never changes `server.json` or pushes an `mcp-v*` tag. Both workflows install `mcp-publisher` through [install-mcp-publisher](.github/actions/install-mcp-publisher/action.yml). When you update it, change `MCP_PUBLISHER_VERSION` and `MCP_PUBLISHER_SHA256` there together.
 
-Don't run `mcp-publisher status` to check a publish. It changes the lifecycle state of the published server.
+`mcp-publisher status` changes the lifecycle state of a published server, so never run it to check a publish. Use it only on purpose, for example to deprecate an old entry.
 
 If the sign-in fails, `https://bluebox.ai/.well-known/mcp-registry-auth` is missing or doesn't match the private key. If `publish` fails with HTTP 403, the name isn't under `ai.bluebox/`; the comparison is case-sensitive.
 
 ### Rotate the signing key
 
-1. Generate a new Ed25519 key pair:
+1. Generate a new Ed25519 key pair in a temporary folder, outside any checkout:
 
    ```bash
-   openssl genpkey -algorithm Ed25519 -out key.pem
+   dir=$(mktemp -d) && openssl genpkey -algorithm Ed25519 -out "$dir/key.pem"
    ```
 
 2. Put the public key on the website. The file at `https://bluebox.ai/.well-known/mcp-registry-auth` holds one line, `v=MCPv1; k=ed25519; p=<public key>`, where the public key is:
 
    ```bash
-   openssl pkey -in key.pem -pubout -outform DER | tail -c 32 | base64
+   openssl pkey -in "$dir/key.pem" -pubout -outform DER | tail -c 32 | base64
    ```
 
 3. Replace the `MCP_REGISTRY_PRIVATE_KEY` environment secret with the private key in hex:
 
    ```bash
-   openssl pkey -in key.pem -outform DER | tail -c 32 | xxd -p -c 64
+   openssl pkey -in "$dir/key.pem" -outform DER | tail -c 32 | xxd -p -c 64
    ```
 
-4. Delete `key.pem`. Never commit the private key.
+4. Store `key.pem` in the team's password manager, then delete `$dir`. Never commit the private key.
 
-The old key stops working as soon as the website serves the new file.
+Don't publish between steps 2 and 3: the website and the secret hold different keys until both are done. The website caches the file for up to 10 minutes, so the old key keeps working that long after step 2.
 
 ### Publish by hand
 
-Use this only if the workflow can't run. You need the private key.
+Use this only if the workflow can't run. You need the private key from the password manager.
 
 1. Install `mcp-publisher` (`brew install mcp-publisher`, or a release binary from [modelcontextprotocol/registry](https://github.com/modelcontextprotocol/registry/releases)).
 2. Bump `version` in `server.json` and merge the change to `main`.
-3. On an up-to-date `main`, validate, sign in and publish:
+3. On an up-to-date `main`, read the key without echoing it, then validate, sign in and publish:
 
    ```bash
+   read -rs MCP_REGISTRY_PRIVATE_KEY
    mcp-publisher validate
    mcp-publisher login http --domain bluebox.ai --private-key "$MCP_REGISTRY_PRIVATE_KEY"
    mcp-publisher publish
    ```
+
+   `read -rs` keeps the key out of your shell history.
 
 4. Check the result as in step 4 above.
 

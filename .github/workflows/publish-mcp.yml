@@ -37,7 +37,7 @@ jobs:
   publish:
     needs: [validate, check-tag]
     runs-on: ubuntu-latest
-    # The signing key is an environment secret, so only an approved run can publish.
+    # The signing key is an environment secret, so the job gets it only after a reviewer approves.
     environment: mcp-registry-publish
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
