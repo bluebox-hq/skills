@@ -8,7 +8,7 @@ How the Bluebox team publishes this repository to plugin marketplaces and regist
 
 The server sets no headers, so clients sign in to Bluebox through OAuth.
 
-The `ai.bluebox` namespace comes from the `bluebox.ai` domain. To publish, the registry checks a signature against the public key at `https://bluebox.ai/.well-known/mcp-registry-auth`, which the Bluebox website serves. Treat that file like the private key: whoever can change it can publish under `ai.bluebox/*`. The earlier entry, `io.github.bluebox-hq/bluebox`, is no longer updated.
+The `ai.bluebox` namespace comes from the `bluebox.ai` domain. To publish, the registry checks a signature against the public key at `https://bluebox.ai/.well-known/mcp-registry-auth`, which the Bluebox website serves. Treat that file like the private key: whoever can change it can publish under `ai.bluebox/*`. The earlier entry, `io.github.bluebox-hq/bluebox`, is deleted (see [The old entry](#the-old-entry)).
 
 ### Publish from CI
 
@@ -39,18 +39,26 @@ To release:
 
 The skills sync replaces only `skills/`, so it never changes `server.json` or pushes an `mcp-v*` tag. Both workflows install `mcp-publisher` through [install-mcp-publisher](.github/actions/install-mcp-publisher/action.yml). When you update it, change `MCP_PUBLISHER_VERSION` and `MCP_PUBLISHER_SHA256` there together.
 
-`mcp-publisher status` changes the lifecycle state of a published server, so never run it to check a publish. Use it only on purpose, for example to deprecate an old entry.
+`mcp-publisher status` changes the lifecycle state of a published server, so never run it to check a publish. Use it only on purpose, as for [the old entry](#the-old-entry).
 
 If the sign-in fails, `https://bluebox.ai/.well-known/mcp-registry-auth` is missing or doesn't match the private key. If `publish` fails with HTTP 403, the name isn't under `ai.bluebox/`; the comparison is case-sensitive.
 
-### Deprecate the old entry
+### The old entry
 
-`io.github.bluebox-hq/bluebox` is the server's earlier name. Deprecate it once `ai.bluebox/mcp` is live:
+`io.github.bluebox-hq/bluebox` is the server's earlier name. Every version of it has the status `deleted`, with the message "Moved to ai.bluebox/mcp", so registry search and listings no longer return it. To see its current state without changing it:
 
 ```bash
-mcp-publisher status --status deprecated --all-versions --yes \
+curl -s "https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.bluebox-hq/bluebox&include_deleted=true"
+```
+
+The record stays in the registry. This command set the current state:
+
+```bash
+mcp-publisher status --status deleted --all-versions --yes \
   --message "Moved to ai.bluebox/mcp" io.github.bluebox-hq/bluebox
 ```
+
+To undo it, run the command again with `--status deprecated`, or with `--status active` and no `--message`. The registry rejects `--message` with `active`.
 
 This needs a sign-in to the `io.github.bluebox-hq` namespace: `mcp-publisher login github-oidc` from a GitHub Actions workflow in a `bluebox-hq` repository, or `mcp-publisher login github --token` by an owner of the `bluebox-hq` organization, with a classic token that has the `read:org` scope. The registry keeps granting that namespace to any workflow in a `bluebox-hq` repository, so write access to those repositories still means publish access to the old name.
 
