@@ -45,14 +45,20 @@ If the sign-in fails, `https://bluebox.ai/.well-known/mcp-registry-auth` is miss
 
 ### The old entry
 
-`io.github.bluebox-hq/bluebox` is the server's earlier name. Every version of it has the status `deleted`, with the message "Moved to ai.bluebox/mcp", so registry search and listings no longer return it. The record stays in the registry, and the status can be changed again:
+`io.github.bluebox-hq/bluebox` is the server's earlier name. Every version of it has the status `deleted`, with the message "Moved to ai.bluebox/mcp", so registry search and listings no longer return it. To see its current state without changing it:
 
 ```bash
-mcp-publisher status --status deprecated --all-versions --yes \
+curl -s "https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.bluebox-hq/bluebox&include_deleted=true"
+```
+
+The record stays in the registry. This command set the current state:
+
+```bash
+mcp-publisher status --status deleted --all-versions --yes \
   --message "Moved to ai.bluebox/mcp" io.github.bluebox-hq/bluebox
 ```
 
-`--status` takes `active`, `deprecated` or `deleted`. The registry rejects `--message` with `active`.
+To undo it, run the command again with `--status deprecated`, or with `--status active` and no `--message`. The registry rejects `--message` with `active`.
 
 This needs a sign-in to the `io.github.bluebox-hq` namespace: `mcp-publisher login github-oidc` from a GitHub Actions workflow in a `bluebox-hq` repository, or `mcp-publisher login github --token` by an owner of the `bluebox-hq` organization, with a classic token that has the `read:org` scope. The registry keeps granting that namespace to any workflow in a `bluebox-hq` repository, so write access to those repositories still means publish access to the old name.
 
