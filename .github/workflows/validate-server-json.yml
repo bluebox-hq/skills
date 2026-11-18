@@ -19,11 +19,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # The registry grants only io.github.<owner>/* and compares case-sensitively,
-      # so a wrong-case name would only fail at publish time with a 403.
-      - name: Check server.json name matches the GitHub namespace
+      # The bluebox.ai key file grants only ai.bluebox/* and the registry compares
+      # case-sensitively, so a wrong name would only fail at publish time with a 403.
+      - name: Check server.json name is in the ai.bluebox namespace
         run: |
-          expected="io.github.${GITHUB_REPOSITORY_OWNER}/"
+          expected="ai.bluebox/"
           actual=$(jq -r .name server.json)
           case "$actual" in
             "$expected"*) echo "OK   server.json (name): \"$actual\"" ;;

@@ -4,45 +4,72 @@ How the Bluebox team publishes this repository to plugin marketplaces and regist
 
 ## MCP Registry and GitHub MCP Registry
 
-[server.json](server.json) describes the Bluebox MCP server for the official [MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.bluebox-hq/bluebox`. The [GitHub MCP Registry](https://github.com/mcp) lists servers from the MCP Registry.
+[server.json](server.json) describes the Bluebox MCP server for the official [MCP Registry](https://registry.modelcontextprotocol.io) as `ai.bluebox/mcp`. The [GitHub MCP Registry](https://github.com/mcp) lists servers from the MCP Registry.
 
 The server sets no headers, so clients sign in to Bluebox through OAuth.
 
+The `ai.bluebox` namespace comes from the `bluebox.ai` domain. The registry lets whoever holds the private key matching `https://bluebox.ai/.well-known/mcp-registry-auth` publish anything under `ai.bluebox/*`. The website serves that file; it holds only the public key. The earlier entry, `io.github.bluebox-hq/bluebox`, is no longer updated.
+
 ### Publish from CI
 
-[publish-mcp.yml](.github/workflows/publish-mcp.yml) publishes `server.json` when someone pushes an `mcp-v*` tag. It signs in with GitHub OIDC, so it needs no stored secret and no owner's token. First it validates `server.json` and checks that the tagged commit is on `main` and that the tag matches `version` in `server.json`. Then the publish job waits for a reviewer of the `mcp-registry-publish` environment.
+[publish-mcp.yml](.github/workflows/publish-mcp.yml) publishes `server.json` when someone pushes an `mcp-v*` tag. First it validates `server.json` and checks that the tagged commit is on `main` and that the tag matches `version` in `server.json`. Then the publish job waits for a reviewer of the `mcp-registry-publish` environment, signs in with the domain key and publishes.
 
-Set up once, before the first tag: in **Settings → Environments**, create `mcp-registry-publish`, add required reviewers and turn on **Prevent self-review**. Under **Deployment branches and tags**, allow only tags that match `mcp-v*`. If a workflow names an environment that doesn't exist, GitHub creates it on the first run without protection rules.
+Set up once, before the first tag:
 
-The reviewer guards this workflow only, not the namespace. The registry gives an OIDC token from any GitHub Actions workflow in a `bluebox-hq` repository the right to publish anything under `io.github.bluebox-hq/*`, and it doesn't check the repository, branch or environment. So anyone who can push a workflow to a `bluebox-hq` repository can publish. Give write access to `bluebox-hq` repositories only to people you'd trust to publish.
+1. In **Settings → Environments**, create `mcp-registry-publish`, add required reviewers and turn on **Prevent self-review**. Under **Deployment branches and tags**, allow only tags that match `mcp-v*`. If a workflow names an environment that doesn't exist, GitHub creates it on the first run without protection rules.
+2. Add the private key to that environment as the secret `MCP_REGISTRY_PRIVATE_KEY`, in hex (see [Rotate the signing key](#rotate-the-signing-key)). An environment secret reaches a job only after the environment's rules pass, so only an approved run can sign in. Repository admins can still skip the review.
 
 To release:
 
-1. Bump `version` in `server.json` (for example to `1.0.1`) and merge the change to `main`. The registry rejects a version that is already published. Skip this step for the first publish, which uses `1.0.0`.
+1. Bump `version` in `server.json` (for example to `1.0.2`) and merge the change to `main`. The registry rejects a version that is already published.
 2. Tag that commit on `main` and push the tag:
 
    ```bash
-   git tag mcp-v1.0.1 && git push origin mcp-v1.0.1
+   git tag mcp-v1.0.2 && git push origin mcp-v1.0.2
    ```
 
 3. A reviewer approves the job in **Actions**.
 4. Check that the new version is live:
 
    ```bash
-   curl -s "https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.bluebox-hq/bluebox"
+   curl -s "https://registry.modelcontextprotocol.io/v0.1/servers?search=ai.bluebox/mcp"
    ```
 
-5. First publish only: email `partnerships@github.com` and ask them to list `io.github.bluebox-hq/bluebox` on github.com/mcp. GitHub curates that list. After the first listing, new versions sync automatically.
+5. First publish only: ask GitHub to list `ai.bluebox/mcp` on github.com/mcp. GitHub curates that list. After the first listing, new versions sync automatically.
 
 The skills sync replaces only `skills/`, so it never changes `server.json` or pushes an `mcp-v*` tag. Both workflows install `mcp-publisher` through [install-mcp-publisher](.github/actions/install-mcp-publisher/action.yml). When you update it, change `MCP_PUBLISHER_VERSION` and `MCP_PUBLISHER_SHA256` there together.
 
 Don't run `mcp-publisher status` to check a publish. It changes the lifecycle state of the published server.
 
-If `publish` fails with HTTP 403, the name doesn't match the namespace. The name must start with `io.github.bluebox-hq/`, and the comparison is case-sensitive.
+If the sign-in fails, `https://bluebox.ai/.well-known/mcp-registry-auth` is missing or doesn't match the private key. If `publish` fails with HTTP 403, the name isn't under `ai.bluebox/`; the comparison is case-sensitive.
+
+### Rotate the signing key
+
+1. Generate a new Ed25519 key pair:
+
+   ```bash
+   openssl genpkey -algorithm Ed25519 -out key.pem
+   ```
+
+2. Put the public key on the website. The file at `https://bluebox.ai/.well-known/mcp-registry-auth` holds one line, `v=MCPv1; k=ed25519; p=<public key>`, where the public key is:
+
+   ```bash
+   openssl pkey -in key.pem -pubout -outform DER | tail -c 32 | base64
+   ```
+
+3. Replace the `MCP_REGISTRY_PRIVATE_KEY` environment secret with the private key in hex:
+
+   ```bash
+   openssl pkey -in key.pem -outform DER | tail -c 32 | xxd -p -c 64
+   ```
+
+4. Delete `key.pem`. Never commit the private key.
+
+The old key stops working as soon as the website serves the new file.
 
 ### Publish by hand
 
-Use this only if the workflow can't run. You need to be an **owner** of the `bluebox-hq` GitHub organization: the registry grants the `io.github.bluebox-hq/*` namespace only to org owners, and membership isn't enough.
+Use this only if the workflow can't run. You need the private key.
 
 1. Install `mcp-publisher` (`brew install mcp-publisher`, or a release binary from [modelcontextprotocol/registry](https://github.com/modelcontextprotocol/registry/releases)).
 2. Bump `version` in `server.json` and merge the change to `main`.
@@ -50,13 +77,11 @@ Use this only if the workflow can't run. You need to be an **owner** of the `blu
 
    ```bash
    mcp-publisher validate
-   mcp-publisher login github --token "$GITHUB_TOKEN"
+   mcp-publisher login http --domain bluebox.ai --private-key "$MCP_REGISTRY_PRIVATE_KEY"
    mcp-publisher publish
    ```
 
-   Sign in with a personal access token. The browser login (`login github` without `--token`) can't publish to an organization namespace yet ([modelcontextprotocol/registry#1468](https://github.com/modelcontextprotocol/registry/issues/1468)). The token must let the registry read your org role: a classic token with the `read:org` scope, or a fine-grained token for `bluebox-hq` with **Members: Read**. A 403 here can also mean the token can't read your org role.
-
-4. Check the result and, on the first publish, email GitHub as in steps 4 and 5 above.
+4. Check the result as in step 4 above.
 
 ## OpenAI plugin directory (ChatGPT and Codex)
 
