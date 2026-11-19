@@ -10,6 +10,10 @@ To suggest a change to a skill, please [open an issue](https://github.com/bluebo
 
 Everything outside `skills/` lives only in this repository and welcomes pull requests. For anything beyond a small docs fix, please open an issue first.
 
+## Plugin changes need a new version
+
+Claude Code updates an installed plugin only when `version` in `.claude-plugin/plugin.json` changes. A pull request that changes `.claude-plugin/`, `hooks/` or `.mcp.json` must also change `version` to a value that is not on `main`; a CI check enforces this. Each Bluebox release sets `version` to its own release number.
+
 ## Publishing
 
 [PUBLISHING.md](PUBLISHING.md) explains how the Bluebox team publishes the MCP server to the MCP Registry and how the plugins reach each marketplace.
