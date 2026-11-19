@@ -25,10 +25,9 @@ def plugin_changes(repo, base, head):
 
 
 def version(repo, ref):
-    try:
-        text = git(repo, "show", f"{ref}:{MANIFEST}")
-    except subprocess.CalledProcessError:
+    if not git(repo, "ls-tree", "--name-only", ref, "--", MANIFEST).strip():
         return None
+    text = git(repo, "show", f"{ref}:{MANIFEST}")
     try:
         data = json.loads(text)
     except json.JSONDecodeError as exc:
@@ -37,6 +36,15 @@ def version(repo, ref):
 
 
 def main(argv=None):
+    try:
+        return check(argv)
+    except subprocess.CalledProcessError as exc:
+        print(f"FAIL git {' '.join(exc.cmd[3:])}: {exc.stderr.strip()}")
+        print("Check that both commits are fetched (actions/checkout with fetch-depth: 0).")
+        return 1
+
+
+def check(argv):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--base", required=True)
     parser.add_argument("--head", required=True)
@@ -49,10 +57,10 @@ def main(argv=None):
         return 0
     # Against the branch point the pull request must change it; against the base tip the merge must.
     before, base, after = (version(args.repo, ref) for ref in (merge_base, args.base, args.head))
-    if after is not None and after not in (before, base):
+    if isinstance(after, str) and after not in (before, base):
         print(f"OK   plugin version {base} -> {after}")
         return 0
-    print(f"FAIL these plugin files changed, but `version` in {MANIFEST} is {after}, as on the base branch:")
+    print(f"FAIL these plugin files changed, but `version` in {MANIFEST} is {after!r}, not a new string:")
     print("\n".join(f"  {n}" for n in changed))
     print("Change `version` too, or Claude Code will not update installed copies of the plugin.")
     return 1

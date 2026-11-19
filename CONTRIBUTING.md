@@ -12,7 +12,7 @@ Everything outside `skills/` lives only in this repository and welcomes pull req
 
 ## Plugin changes need a new version
 
-Claude Code updates an installed plugin only when `version` in `.claude-plugin/plugin.json` changes. A pull request that changes `.claude-plugin/`, `hooks/` or `.mcp.json` must also change `version` to a value that is not on `main`; a CI check enforces this. Each Bluebox release sets `version` to its own release number.
+Claude Code updates an installed plugin only when `version` in `.claude-plugin/plugin.json` changes. A pull request that changes `.claude-plugin/`, `hooks/` or `.mcp.json` must also change `version`; a CI check enforces this. Add a suffix to the version on `main`, for example `0.1526.0` becomes `0.1526.0-1`, then `0.1526.0-2`. A release number would collide with a later Bluebox release, which sets `version` to its own release number.
 
 ## Publishing
 

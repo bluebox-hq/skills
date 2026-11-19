@@ -129,6 +129,17 @@ class CheckPluginVersionTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertIn("2.0.0 -> 2.0.1", result.stdout)
 
+    def test_a_non_string_version_fails(self):
+        self.commit({MANIFEST: json.dumps({"name": "bluebox", "version": 2}) + "\n", "hooks/hook.sh": "echo 2\n"})
+        self.assertEqual(self.check().returncode, 1)
+
+    def test_an_unknown_commit_fails_with_a_message(self):
+        self.base = "0" * 40
+        result = self.check()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("FAIL", result.stdout + result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
