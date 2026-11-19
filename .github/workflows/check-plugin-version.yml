@@ -15,10 +15,18 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      - name: Test the check
-        run: python3 -m unittest -v tests/ci/test_check_plugin_version.py
       - name: Check a plugin change comes with a new version
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
         run: python3 .github/scripts/check_plugin_version.py --base "$BASE" --head "$HEAD"
+
+  # Its own job, so a broken test never hides the check result.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Test the check
+        run: python3 -m unittest -v tests/ci/test_check_plugin_version.py
