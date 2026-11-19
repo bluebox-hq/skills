@@ -1,6 +1,6 @@
 {
   "name": "bluebox",
-  "version": "0.1564.0",
+  "version": "0.1564.0+1",
   "description": "Connect your coding agent to Bluebox, the observability agent for AI-native development. Check production before planning a change, pick up a Bluebox investigation's root cause, and add OpenTelemetry to your services. Requires a Bluebox account.",
   "author": {
     "name": "Bluebox",
@@ -19,6 +19,14 @@
       "type": "http",
       "url": "https://app.bluebox.ai/v1/mcp",
       "headers": { "X-Bluebox-Install": "claude-code-plugin" }
+    }
+  },
+  "userConfig": {
+    "hooks_enabled": {
+      "type": "boolean",
+      "title": "Bluebox hooks",
+      "description": "Add a short Bluebox note when a session starts and a one-line nudge when a prompt looks like planning, debugging, reviewing or a deploy. Turn off to keep only the skills and the MCP server.",
+      "default": true
     }
   },
   "keywords": [
