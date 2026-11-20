@@ -10,6 +10,10 @@ To suggest a change to a skill, please [open an issue](https://github.com/bluebo
 
 Everything outside `skills/` lives only in this repository and welcomes pull requests. For anything beyond a small docs fix, please open an issue first.
 
+## Plugin changes need a new version
+
+Claude Code updates an installed plugin only when `version` in `.claude-plugin/plugin.json` changes. A pull request that changes `.claude-plugin/`, `hooks/`, `assets/` or `.mcp.json` must also change `version`; a CI check enforces this. Add build metadata to the version on `main`, for example `0.1526.0` becomes `0.1526.0+1`, then `0.1526.0+2`. A `-1` suffix would be a semver pre-release, which sorts below `0.1526.0`. A release number would collide with a later Bluebox release, which sets `version` to its own release number.
+
 ## Publishing
 
 [PUBLISHING.md](PUBLISHING.md) explains how the Bluebox team publishes the MCP server to the MCP Registry and how the plugins reach each marketplace.
