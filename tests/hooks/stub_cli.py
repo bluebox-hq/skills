@@ -2,6 +2,7 @@
 
 import os
 import sys
+import time
 
 
 def main() -> int:
@@ -10,6 +11,7 @@ def main() -> int:
     if log:
         with open(log, "ab") as f:
             f.write(" ".join(sys.argv[1:]).encode() + b"\n" + data + b"\n")
+    time.sleep(float(os.environ.get("STUB_SLEEP", "0")))
     if os.environ.get("STUB_MODE") == "hooks" and sys.argv[1:2] == ["hooks"]:
         sys.stdout.write("cli says hi to the model\n")
         sys.stderr.write("cli says hi to the user\n")

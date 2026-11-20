@@ -1,4 +1,4 @@
-# JSON and nudges.yaml reading for bluebox-hook.sh; mode is fields, nudge, mcp or declined, and input comes folded into short lines.
+# JSON and nudges.yaml reading for bluebox-hook.sh; mode is fields, nudge or mcp, and input comes folded into short lines.
 
 BEGIN {
     d = 0; instr = 0; esc = 0; skip = 0; uni = ""; buf = ""; part = ""
@@ -69,10 +69,10 @@ function str(s) {
     else if (mode == "mcp" && key[d] == "url" && bluebox(s) &&
              ((d == 3 && key[1] == "mcpServers") ||
               (d == 5 && key[1] == "projects" && samepath(key[2], project) && key[3] == "mcpServers")))
-        print key[d - 1]
-    else if (mode == "declined" && d == 4 && type[4] == "a" && key[1] == "projects" && samepath(key[2], project) &&
-             key[3] == "disabledMcpjsonServers")
-        print s
+        print "+" key[d - 1]
+    else if (mode == "mcp" && d == 4 && type[4] == "a" && key[1] == "projects" && samepath(key[2], project) &&
+             (key[3] == "disabledMcpServers" || key[3] == "disabledMcpjsonServers"))
+        print "-" s
 }
 
 function bluebox(u,    host) {

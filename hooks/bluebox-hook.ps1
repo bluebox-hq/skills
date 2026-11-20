@@ -10,8 +10,8 @@ $here = Join-Path $env:CLAUDE_PLUGIN_ROOT 'hooks'
 
 if (@('false', '0', 'no', 'off') -contains "$env:CLAUDE_PLUGIN_OPTION_HOOKS_ENABLED".ToLowerInvariant()) { exit 0 }
 
-# String leaves as (path, value): top-level ones, or those under $leafKey or in a $listKey array; control characters become spaces.
-function Get-JsonStrings([string]$text, [string]$leafKey, [string]$listKey) {
+# String leaves as (path, value): top-level ones, or those under $leafKey or in an array named in $listKeys; control characters become spaces.
+function Get-JsonStrings([string]$text, [string]$leafKey, [string[]]$listKeys) {
     $type = @{}; $key = @{}; $wantKey = @{}; $d = 0
     $leaves = New-Object System.Collections.Generic.List[object]
     foreach ($m in [regex]::Matches($text, '"[^"\\]*(?:\\.[^"\\]*)*"|[{}\[\],:]|[^\s{}\[\],:"]+')) {
@@ -26,8 +26,8 @@ function Get-JsonStrings([string]$text, [string]$leafKey, [string]$listKey) {
             '"' {
                 $isKey = $d -gt 0 -and $type[$d] -eq 'o' -and $wantKey[$d]
                 # The string goes on the left: an array index there would be a failed int conversion per token.
-                if ($isKey -or ($leafKey -and $leafKey -ceq $key[$d]) -or ($listKey -and $type[$d] -eq 'a' -and $listKey -ceq $key[$d - 1]) -or
-                    (-not $leafKey -and -not $listKey -and $d -eq 1)) {
+                if ($isKey -or ($leafKey -and $leafKey -ceq $key[$d]) -or ($listKeys -and $type[$d] -eq 'a' -and $listKeys -ccontains $key[$d - 1]) -or
+                    (-not $leafKey -and -not $listKeys -and $d -eq 1)) {
                     $s = $t.Substring(1, $t.Length - 2)
                     if ($s.IndexOf('\') -ge 0) { $s = [regex]::Unescape($s) -replace '[\x00-\x1f]', ' ' }
                     if ($isKey) { $key[$d] = $s }
@@ -187,7 +187,7 @@ try {
     $remote = if ($remotes -ccontains 'origin') { 'origin' } else { $remotes | Select-Object -First 1 }
     $url = ''
     if ($remote) { $url = "$(Invoke-Git -C $cwd remote get-url $remote | Select-Object -First 1)" -replace '^([A-Za-z][A-Za-z0-9+.-]*://)[^/]*@', '$1' }
-    # The remote is repo-controlled text bound for the model, so only a plain URL passes.
+    # The remote goes to the model, so it is held to URL characters and 300 of them; that doesn't make it a real repo URL.
     if ($url -cmatch '^(file:|/|\.|.:[\\/])' -or $url -cmatch '[^A-Za-z0-9._~:/@%+-]' -or $url -notmatch ':' -or $url.Length -gt 300) { $url = '' }
     if ($url) { $lines.Add("Bluebox: when a task touches a live service, call the Bluebox MCP tool list_services with repository_url `"$url`" to find the services built from this repository.") }
 
@@ -210,24 +210,24 @@ try {
     $readJson = { param($f) if (Test-Path -LiteralPath $f -PathType Leaf) { [IO.File]::ReadAllText($f) } else { '' } }
     $userText = & $readJson $claudeJson
     $teamText = & $readJson (Join-Path $project '.mcp.json')
-    $names = @(); $team = @(); $declined = @()
+    $names = @(); $team = @(); $off = @()
     if ($teamText -match 'bluebox\.ai') {
         $team = @(foreach ($leaf in (Get-JsonStrings $teamText 'url')) {
             if ($leaf.Path.Count -eq 3 -and $leaf.Path[0] -ceq 'mcpServers' -and (Test-Bluebox $leaf.Value)) { $leaf.Path[1] }
         })
     }
     if ($userText -match 'bluebox\.ai' -or $team.Count) {
-        foreach ($leaf in (Get-JsonStrings $userText 'url' 'disabledMcpjsonServers')) {
+        foreach ($leaf in (Get-JsonStrings $userText 'url' @('disabledMcpServers', 'disabledMcpjsonServers'))) {
             $p = $leaf.Path
-            if ($p.Count -eq 4 -and $p[0] -ceq 'projects' -and (Get-PathKey $p[1]) -eq $projectKey -and $p[2] -ceq 'disabledMcpjsonServers') {
-                $declined += $leaf.Value
+            if ($p.Count -eq 4 -and $p[0] -ceq 'projects' -and (Get-PathKey $p[1]) -eq $projectKey -and $p[2] -cin 'disabledMcpServers', 'disabledMcpjsonServers') {
+                $off += $leaf.Value
             } elseif ((Test-Bluebox $leaf.Value) -and (($p.Count -eq 3 -and $p[0] -ceq 'mcpServers') -or
                 ($p.Count -eq 5 -and $p[0] -ceq 'projects' -and (Get-PathKey $p[1]) -eq $projectKey -and $p[2] -ceq 'mcpServers'))) { $names += $p[-2] }
         }
     }
-    $servers = Join-Names $names
-    # A project server the user declined never loads, so it is no duplicate.
-    $team = Join-Names @($team | Where-Object { $declined -cnotcontains $_ })
+    # A server turned off in /mcp, or declined when the project asked, never loads, so it is no duplicate.
+    $servers = Join-Names @($names | Where-Object { $off -cnotcontains $_ })
+    $team = Join-Names @($team | Where-Object { $off -cnotcontains $_ })
 
     if (($found -or $servers -or $team) -and -not ($shown -ccontains 'duplicates')) {
         $from = @(); $fix = @()

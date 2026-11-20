@@ -36,18 +36,21 @@ UserPromptSubmit) sub=prompt ;;
 esac
 
 if command -v bluebox >/dev/null 2>&1 && tmp=$(mktemp -d 2>/dev/null); then
+	# A hook stopped at its timeout still removes the folder, once the CLI exits.
+	trap 'rm -rf "$tmp"' EXIT
+	trap 'exit 1' HUP INT TERM
 	printf '%s' "$input" | bluebox hooks "$sub" >"$tmp/out" 2>"$tmp/err"
 	code=$?
 	# Every released CLI without the hooks command prints exactly this line.
 	if [ "$code" -ne 1 ] || [ "$(sed -n 1p "$tmp/err" | tr -d '\r')" != "unknown command: hooks" ]; then
 		cat "$tmp/out"
 		cat "$tmp/err" >&2
-		rm -rf "$tmp"
 		# Exit 2 would block the prompt, which a hook that only adds notes must never do.
 		[ "$code" -eq 2 ] && code=1
 		exit "$code"
 	fi
 	rm -rf "$tmp"
+	trap - EXIT HUP INT TERM
 fi
 
 [ -n "$cwd" ] && [ -d "$cwd" ] || cwd=$PWD
@@ -77,7 +80,7 @@ fi
 remote=$(git -C "$cwd" remote 2>/dev/null | grep -x origin || git -C "$cwd" remote 2>/dev/null | sed -n 1p)
 url=''
 [ -n "$remote" ] && url=$(git -C "$cwd" remote get-url "$remote" 2>/dev/null | sed -n 1p | sed -E 's#^([A-Za-z][A-Za-z0-9+.-]*://)[^/]*@#\1#')
-# The remote is repo-controlled text bound for the model, so only a plain URL passes.
+# The remote goes to the model, so it is held to URL characters and 300 of them; that doesn't make it a real repo URL.
 case $url in
 '' | file:* | /* | .* | ?:[\\/]* | *[!A-Za-z0-9._~:/@%+-]*) url='' ;;
 *:*) ;;
@@ -96,10 +99,13 @@ skills() {
 	for d in "$1"/bluebox-*; do [ -d "$d" ] && [ -d "$here/../skills/${d##*/}" ] && printf '%s\n' "${d##*/}"; done | names
 }
 
-config=${CLAUDE_CONFIG_DIR:-$HOME/.claude}
+# Claude Code on Windows reads the profile folder, even when Git Bash has a HOME of its own.
+home=$HOME
+[ -n "${USERPROFILE-}" ] && command -v cygpath >/dev/null 2>&1 && home=$(cygpath -u "$USERPROFILE" 2>/dev/null || printf '%s' "$HOME")
+config=${CLAUDE_CONFIG_DIR:-$home/.claude}
 project=${CLAUDE_PROJECT_DIR:-$cwd}
 label=$config/skills
-[ "$config" -ef "$HOME/.claude" ] && label='~/.claude/skills'
+[ "$config" -ef "$home/.claude" ] && label='~/.claude/skills'
 found=''
 s=$(skills "$config/skills")
 [ -n "$s" ] && found="$s in $(printf '%.80s' "$label")"
@@ -113,17 +119,20 @@ read_json() {
 	# Paths go through the environment: awk -v would read the backslashes in a Windows path as escapes.
 	fold -b -w 2048 <"$1" | BLUEBOX_PROJECT=$project awk -v mode="$2" -f "$here/bluebox-hook.awk"
 }
-claude_json=${CLAUDE_CONFIG_DIR:-$HOME}/.claude.json
+claude_json=${CLAUDE_CONFIG_DIR:-$home}/.claude.json
+# Prints the "+name" servers in $1 that no "-name" line in $2 turns off.
+loaded() {
+	printf '%s\n' "$1" | BLUEBOX_OFF=$2 awk '
+		BEGIN { n = split(ENVIRON["BLUEBOX_OFF"], s, "\n"); for (i = 1; i <= n; i++) if (s[i] ~ /^-/) off[substr(s[i], 2)] }
+		/^[+]/ && !(substr($0, 2) in off) { print substr($0, 2) }' | names
+}
+user='' team=''
+grep -qi 'bluebox\.ai' "$project/.mcp.json" 2>/dev/null && team=$(read_json "$project/.mcp.json" mcp)
+{ [ -n "$team" ] || grep -qi 'bluebox\.ai' "$claude_json" 2>/dev/null; } && user=$(read_json "$claude_json" mcp)
+# A server turned off in /mcp, or declined when the project asked, never loads, so it is no duplicate.
 servers=''
-grep -qi 'bluebox\.ai' "$claude_json" 2>/dev/null && servers=$(read_json "$claude_json" mcp | names)
-team=''
-if grep -qi 'bluebox\.ai' "$project/.mcp.json" 2>/dev/null; then
-	team=$(read_json "$project/.mcp.json" mcp)
-	# A project server the user declined never loads, so it is no duplicate.
-	[ -n "$team" ] && team=$(printf '%s\n' "$team" | BLUEBOX_SKIP=$(read_json "$claude_json" declined) awk '
-		BEGIN { n = split(ENVIRON["BLUEBOX_SKIP"], s, "\n"); for (i = 1; i <= n; i++) skip[s[i]] }
-		!($0 in skip)' | names)
-fi
+[ -n "$user" ] && servers=$(loaded "$user" "$user")
+[ -n "$team" ] && team=$(loaded "$team" "$user")
 
 if { [ -n "$found" ] || [ -n "$servers" ] || [ -n "$team" ]; } && ! shown duplicates; then
 	from='' fix=''

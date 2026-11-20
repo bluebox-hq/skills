@@ -373,6 +373,37 @@ class HookCase:
                                          str(self.elsewhere): {"disabledMcpjsonServers": ["not-this-one"]}})
         self.assertNothing(self.start())
 
+    def test_servers_turned_off_in_mcp_are_not_duplicates(self):
+        self.write_mcp_json(**{"team-bluebox": "https://app.bluebox.ai/v1/mcp"})
+        self.write_claude_json(servers={"bb": {"type": "http", "url": "https://app.bluebox.ai/v1/mcp"}},
+                               projects={str(self.repo): {"disabledMcpServers": ["team-bluebox", "bb"]}})
+        self.assertNothing(self.start())
+
+    def test_servers_turned_off_in_another_project_are_still_duplicates(self):
+        self.write_mcp_json(**{"team-bluebox": "https://app.bluebox.ai/v1/mcp"})
+        self.write_claude_json(servers={"bb": {"type": "http", "url": "https://app.bluebox.ai/v1/mcp"}},
+                               projects={str(self.elsewhere): {"disabledMcpServers": ["team-bluebox", "bb"]}})
+        r = self.start()
+        self.assertIn("configured by hand (bb)", r.stdout)
+        self.assertIn(".mcp.json (team-bluebox)", r.stdout)
+
+    def test_the_windows_profile_folder_is_home_even_when_home_points_elsewhere(self):
+        profile = self.tmp / "profile"
+        (profile / ".claude" / "skills" / "bluebox-overview").mkdir(parents=True)
+        (self.home / ".claude" / "skills" / "bluebox-production-query").mkdir(parents=True)
+        env = {"USERPROFILE": str(profile)}
+        if not WINDOWS:
+            # Git Bash's cygpath, which turns the profile path into a POSIX one.
+            bin_dir = self.tmp / "msys"
+            bin_dir.mkdir()
+            (bin_dir / "cygpath").write_text('#!/bin/sh\nprintf \'%s\\n\' "$2"\n')
+            (bin_dir / "cygpath").chmod(0o755)
+            env["PATH"] = os.pathsep.join([str(bin_dir), self.env({})["PATH"]])
+        r = self.start(env=env)
+        self.assertQuiet(r)
+        self.assertIn("bluebox-overview in ~/.claude/skills", r.stdout)
+        self.assertNotIn("bluebox-production-query", r.stdout)
+
     def test_hand_configured_and_project_servers_get_both_fixes(self):
         self.write_claude_json(servers={"bb": {"type": "http", "url": "https://app.bluebox.ai/v1/mcp"}},
                                projects={str(self.elsewhere): {"disabledMcpjsonServers": ["team-bluebox"]}})
@@ -571,6 +602,30 @@ class HookCase:
                 r = self.run_hook(event, prompt="plan it", env={"STUB_EXIT": "2"})
                 self.assertEqual(r.stderr, "cli says hi to the user\n")
                 self.assertEqual(r.code, 1)
+
+    def test_a_hook_stopped_while_the_cli_runs_leaves_no_temp_folder(self):
+        if WINDOWS or self.runner != "sh":
+            self.skipTest("a TERM signal needs a POSIX sh")
+        self.add_stub_cli("hooks")
+        tmpdir = self.tmp / "tmpdir"
+        tmpdir.mkdir()
+        probe = subprocess.run(["mktemp", "-d"], capture_output=True, text=True, env={**os.environ, "TMPDIR": str(tmpdir)})
+        if not probe.stdout.startswith(str(tmpdir)):
+            self.skipTest("this mktemp ignores TMPDIR")
+        os.rmdir(probe.stdout.strip())
+        payload = json.dumps({"session_id": "s1", "cwd": str(self.repo), "hook_event_name": "UserPromptSubmit",
+                              "prompt": "hi"}).encode()
+        proc = subprocess.Popen(runner_argv("sh", hook_command("UserPromptSubmit"), root=self.root),
+                                stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                cwd=str(self.repo), env=self.env({"TMPDIR": str(tmpdir), "STUB_SLEEP": "1"}))
+        proc.stdin.write(payload)
+        proc.stdin.close()
+        deadline = time.monotonic() + 10
+        while not self.stub_log.exists() and time.monotonic() < deadline:
+            time.sleep(0.02)
+        proc.terminate()
+        proc.wait(timeout=10)
+        self.assertEqual(list(tmpdir.iterdir()), [])
 
     def test_a_cli_without_the_hooks_command_falls_back_to_the_plugin_script(self):
         self.set_remote("https://github.com/acme/shop.git")
