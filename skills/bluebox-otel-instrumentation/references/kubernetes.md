@@ -5,20 +5,14 @@
 Follow only when the user asks Bluebox to monitor a **Kubernetes cluster** (cluster/node/pod metrics and Kubernetes events), not when instrumenting a
 single service. Cluster-side, over the **same** OTLP endpoint and ingest token.
 
-## What this gives Bluebox
-
-Node, pod and cluster metrics, object state, and events as logs, carrying `k8s.*` resource attributes.
-
 ## Boundaries and gates
 
-- **App instrumentation is unchanged.**
 - **Cluster-scoped RBAC is privileged.** Needs a `ServiceAccount` + `ClusterRole` + `ClusterRoleBinding` with cluster-wide read on nodes, pods,
   events, workloads, and a `Role` + `RoleBinding` for its lease in `<ns>`. Get explicit user approval before applying it.
 - **Same Bluebox ingest contract.** Hard rules 1, 7 and 8 apply unchanged; token lives in a Kubernetes `Secret` referenced by env.
 
 ## Prerequisites
 
-- A running Kubernetes cluster and `kubectl` access with permission to create RBAC and workloads.
 - The **OpenTelemetry Collector Contrib** distribution (or any build with the `k8s_cluster`, `kubelet_stats`, `k8s_events`, `otlp` receivers, the
   `k8sattributes`, `transform`, `filter`, `cumulativetodelta` processors, and `k8s_leader_elector`/`health_check` extensions).
 
@@ -229,21 +223,3 @@ env=*
 are Kubernetes cluster or pod metrics and events arriving for cluster <CLUSTER_NAME> in the last 15 minutes?
 /
 ```
-
-## Declared criticality (Bluebox critical-components ranking)
-
-Bluebox ranks a service by the `primary_tags.criticality` span resource attribute (`high`/`medium`/`low`); without it, on derived fragility alone.
-
-**How to set it (the only supported path with direct export):** in the service's environment,
-
-```bash
-OTEL_RESOURCE_ATTRIBUTES="primary_tags.criticality=high"
-```
-
-Bluebox reads it from the first matching **app span**. App services export directly, not through the cluster collector, so its
-`k8sattributes` processor can't set it.
-
-## Report
-
-Summarize: the cluster, its RBAC applied with the user's approval, the signals, the ingest token kept in an uncommitted
-Kubernetes Secret, and the verification state.

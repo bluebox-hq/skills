@@ -6,7 +6,6 @@ Follow only when the user asks Bluebox to instrument an **AWS Lambda function**,
 
 - **The runtime freezes between invocations**, right after the handler returns, so a `BatchSpanProcessor` that flushes on a timer or on process
   exit loses buffered spans.
-- **Cold starts matter.** Instrumentation must be ready before the first invocation; export must not add unbounded response latency.
 
 ## Path A (recommended): AWS-managed OpenTelemetry Lambda layer
 
@@ -55,8 +54,9 @@ Point the SDK exporter at Bluebox and make export freeze-safe:
   never composed).
 - Node.js: depend on `@opentelemetry/exporter-trace-otlp-proto` (and `-metrics-`/`-logs-` siblings), or let `@opentelemetry/sdk-node` pick an exporter
   from `OTEL_EXPORTER_OTLP_PROTOCOL`. A self-constructed `*-otlp-http` exporter sends JSON, which ingest rejects with **415** (Hard rule 7).
-- Do **not** rely on `BatchSpanProcessor` flush-on-exit. Call `forceFlush()` on the tracer/span processor before the handler returns, or use a
-  Lambda-aware wrapper that flushes on `runtimeDone`.
+- Do **not** rely on `BatchSpanProcessor` flush-on-exit. Call `forceFlush()` on the tracer provider (and the logger provider at level 3) before
+  the handler returns, or use a Lambda-aware wrapper that flushes on `runtimeDone`. Add no metric flush of your own: the Node
+  AWS Lambda instrumentation, on by default, already flushes the tracer, meter and logger providers after each invocation, one data point per series.
 - Keep the exporter timeout well under the function timeout.
 
 Path B is for functions with their own SDK bootstrap or that can't add a layer.
@@ -95,10 +95,9 @@ are spans arriving for <function> around <recorded-test-time>?
 
 A name the script refuses (exit 1) leaves the function `blocked` (`other: name refused by verify.sh`).
 
-Report per the closing summary's three states: no token (`no_token`), no workspace (`no_endpoint`) or no invocation
-(`not_started`) is `blocked`; no answer from `bluebox ask` is `blocked` (`verify_unreadable`); never verified.
+Report per the closing summary's three states: no workspace (`no_endpoint`), no invocation (`not_started`) and no answer from
+`bluebox ask` (`verify_unreadable`) are `blocked`; never verified.
 
 ## Boundaries
 
-- Does not set up managed-service monitoring, provider Lambda platform metrics, RUM, AppSec, or dashboards/alerts: only
-  the function's own traces (optionally metrics and logs).
+- Only the function's own traces (optionally metrics and logs): no platform or CloudWatch metrics.

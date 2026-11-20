@@ -5,28 +5,19 @@ over the **same** OTLP endpoint and ingest token.
 
 For Kubernetes cluster/node/pod telemetry, use [kubernetes.md](kubernetes.md).
 
-## What this gives Bluebox
-
-`hostmetrics` (the collector host's resources), `prometheus` (a service's existing
-`/metrics` endpoint), `filelog` (log files) and datastore receivers (`postgresql`, `mysql`, `redis`, …).
-
 ## Boundaries and gates
 
-- **App instrumentation is unchanged.**
-- **Same Bluebox ingest contract.** Export over `http/protobuf` (`otlphttp`) to the Bluebox OTLP endpoint with the Bluebox ingest token from env/secret store, never inlined or
-  committed; no separate credential, no extra scope.
+- **Configure only a real source:** a real `/metrics` endpoint, a reachable datastore.
+- **Same Bluebox ingest contract.** Hard rules 1, 7 and 8 apply unchanged: `http/protobuf` (`otlphttp`) to the Bluebox OTLP endpoint, the token from
+  env or a secret store, never inlined or committed; no separate credential, no extra scope.
 - **Cumulative metric series need delta conversion.** Bluebox rejects them, so any pipeline with a cumulative source **must** include
   `cumulativetodelta`. `prometheus` and datastore receivers are mostly cumulative counters; `hostmetrics`
   is a **mix**: utilization gauges plus cumulative sums (`system.cpu.time`, `system.disk.io`, `system.network.io`).
 - **Datastore credentials are privileged.** `postgresql`/`mysql`/`redis` receivers need a least-privilege monitoring
   user/password from secret/env, never inlined or committed.
-- **Confirm the target.** Only configure a receiver for a signal the user asked for and a source that exists (a real `/metrics` endpoint,
-  real log paths, a reachable datastore).
 
 ## Prerequisites
 
-- A place to run the Collector: the monitored host/VM (for `hostmetrics`/`filelog`), a sidecar, or a standalone collector reaching
-  the scrape/datastore targets.
 - The **OpenTelemetry Collector Contrib** distribution (or any build with the `hostmetrics`, `prometheus`, `filelog`, and datastore receivers plus the
   `cumulativetodelta` processor). In a container, pin its image as `otel/opentelemetry-collector-contrib:<version>@sha256:<digest>`
   (on a host, that same release's binary, checked against its published checksums): after approval, resolve the newest release the way
@@ -133,8 +124,3 @@ bluebox ask 'are metrics from the app /metrics scrape arriving in the last 15 mi
 ```
 
 - Missing metrics: check `cumulativetodelta` first.
-
-## Report
-
-Summarize: the receivers and why, their sources, `cumulativetodelta` on every metrics pipeline, credentials kept in env/secret,
-uncommitted, and the verification state.

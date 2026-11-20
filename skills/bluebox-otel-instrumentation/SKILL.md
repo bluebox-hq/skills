@@ -12,7 +12,7 @@ description: >
   tracing", "OTel setup", "wire up telemetry for Bluebox".
 compatibility: Coding agents (Claude Code, Cursor, Windsurf, Copilot, Kiro, OpenCode, Codex)
 metadata:
-  version: "3.12.0"
+  version: "3.13.1"
   audience: coding-agent
 ---
 
@@ -96,7 +96,8 @@ Your first response is the plan the developer approves:
    starting anything. The Runtime line narrows the options (no usable runtime, a daemon
    to start) as [probes.md](references/probes.md) states. With
    a question tool (`AskUserQuestion` in Claude Code) ask through it; keep the question
-   text sparse: one status line, one compact line per item, the question.
+   text sparse: one status line, one compact line per item, the question. Say in it that
+   levels 2 and 3 send metrics, which count against the plan's metric quota (Hard rule 13).
    The rules table follows the plan
    table in both paths: before the question when one is asked, before the "Taking level
    N" line when not. Without such a tool, ask in plain text and **stop and wait**.
@@ -172,6 +173,9 @@ exactly as this line does.
     else: never kill by port or name, whatever the repository's notes say; a bound port
     means another port or a report; no `sudo` on the host, no elevated change in the runtime's VM
     ([session-discipline.md](references/session-discipline.md)).
+13. **Metrics count against the plan's quota.** Runtime metrics stay off unless the request
+    asks for them, committed config keeps the SDK's 60 s export interval or more, and you add
+    no metric flush of your own ([export-contract.md](references/export-contract.md) § Metric volume).
 
 ## Workflow
 
@@ -257,7 +261,7 @@ lines before you wait (`verify.sh logs …`), fix, restart, read again; settle;
 then ONE batched ask, `verify.sh ask …` scoped to the recorded environment
 name (`bluebox ask` by hand only where the script is missing). Every count you quote names that scope, and a scoped count is never
 compared with an unscoped one. Never report `reporting` for a service you saw no signal
-from. Before finishing: the secrets scan, the verification table into the record
+from. Before finishing: the secrets scan, `verify.sh intervals`, the verification table into the record
 (`--step verify`), and the fresh-window offer after a blocked window.
 
 ## Closing summary (fixed shape)

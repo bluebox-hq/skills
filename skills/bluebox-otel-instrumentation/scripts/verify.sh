@@ -4,26 +4,21 @@
 #   bash <skill dir>/scripts/verify.sh logs --lang node|java|python|dotnet|go --service '<name>' \
 #             (--compose "<compose>" | --logs-cmd '<command>') [--since 2m]
 #       Reads the exporter's own log for the failure lines of that runtime, never the whole
-#       log: greps the status lines, withholds a failure line that mentions a header (it is
-#       counted, and a count means the transport is not confirmed), cuts query strings and
-#       user-info out of URLs, masks a Dynatrace token and an Authorization, Api-Token,
-#       Bearer, Basic or OTLP headers value wherever it stands, in the log and in the echoed
-#       command alike (Hard rule 1). Runs the log command exactly once: a non-zero exit is a
-#       run problem (wrong service name, container gone, no log file yet), never a clean
-#       transport — exit 2, nothing shown. --compose is the compose
-#       command the runtime probe found (`podman compose`, `docker compose`, ...);
-#       --logs-cmd replaces the compose log command for a stack that is not compose
-#       (`kubectl logs <pod>`, `journalctl -u <unit>`): one plain command, words grouped with double quotes.
+#       log: withholds a failure line that mentions a header (counted: a count means the
+#       transport is not confirmed) and masks tokens, userinfo, query strings and Authorization,
+#       Api-Token, Bearer, Basic or OTLP headers values, in the log and in the echoed command
+#       alike (Hard rule 1). Runs the log command once: a non-zero exit is a run problem, never
+#       a clean transport (exit 2, nothing shown). --compose is the runtime probe's compose
+#       command (`podman compose`); --logs-cmd replaces it for a stack that is not compose
+#       (`kubectl logs <pod>`): one plain command, words grouped with double quotes.
 #
 #   bash <skill dir>/scripts/verify.sh ask [--env '<env>'] --window '<T1>..<now>' --services '<a>, <b>' \
 #             --signals 'spans, logs, and metrics' [--settle '<seconds>'] [--print]
 #       Runs the ONE batched check, verbatim from references/verify.md, scoped to the plan
 #       table's environment name. Run from the repository root: with no --env it takes the
-#       name .bluebox/instrumentation-run.json records (state-update.py --environment), and
-#       an --env that differs from the recorded one is refused, both named: record the
-#       developer's re-scope first. --settle 45 or 90 waits that long first, here, so the agent
-#       never runs a sleep of its own, then ends the window at the ask. --print shows the
-#       command instead of running it.
+#       name .bluebox/instrumentation-run.json records, and an --env that differs is refused.
+#       --settle 45 or 90 waits that long first, here, then ends the window at the ask.
+#       --print shows the command instead of running it.
 #
 #   bash <skill dir>/scripts/verify.sh question [--print] <<'/'
 #   [service=<name>]
@@ -31,14 +26,17 @@
 #   <the question>
 #   /
 #       Asks one hand-written question. Every value comes from the quoted heredoc, so none
-#       reaches a shell: service= and env= are checked like the ask's (an env= other than the
-#       recorded one is refused), and the other lines, joined, go to bluebox as a single argument.
-#       While the run record names an environment, a question carries env= or env=* (asked
-#       across every environment, for host or cluster telemetry no environment name scopes).
+#       reaches a shell: service= and env= are checked like the ask's, and the other lines,
+#       joined, go to bluebox as a single argument. While the run record names an environment,
+#       a question carries env= or env=* (every environment, for host or cluster telemetry).
 #
-# Exit: 0 read or ask done (the output is the evidence); 1 bad arguments; 2 the log command
-# itself failed; 3 bluebox ended an ask or a question with no answer text, twice, whatever its exit
-# (it is asked once more by itself): no evidence either way. Raise the tool's own timeout for the ask (Hard rule 11).
+#   bash <skill dir>/scripts/verify.sh intervals
+#       Lists path:line and value of each OTEL_METRIC_EXPORT_INTERVAL, otel.metric.export.interval, exportIntervalMillis,
+#       export_interval_millis or ExportIntervalMilliseconds below 60000 ms in regular files, ignored ones only if .env- or .tfvars-named (Hard rule 13).
+#
+# Exit: 0 done (the output is the evidence); 1 bad arguments; 2 the log command failed; 3 bluebox
+# ended an ask or question with no answer text, twice: no evidence either way; 4 intervals found
+# one. Raise the tool's own timeout for the ask (Hard rule 11).
 set -u
 set -f
 # strict-mode: off - it reads the log command's and bluebox's status (`rc=$?`); a grep with no hit is an answer
@@ -322,6 +320,75 @@ case $mode in
       printf '\n'
     else
       run_ask "$@" "$q"
+    fi
+    ;;
+  intervals)
+    root=$(git rev-parse --show-toplevel 2>/dev/null) || die "intervals: run it from the repository, inside a git work tree"
+    command -v python3 >/dev/null 2>&1 || die "intervals needs python3"
+    cd "$root" || die "intervals: cannot enter the work tree's root"
+    found=$({
+      git ls-files -z --cached --others --exclude-standard
+      git ls-files -z --others --ignored --exclude-standard -- ':(glob)**/.env' ':(glob)**/.env.*' ':(glob)**/*.env' ':(glob)**/*.tfvars'
+    } | python3 -I -S -c 'import os, re, stat, sys
+key = r"(?P<k>OTEL_METRIC_EXPORT_INTERVAL|otel\.metric\.export\.interval|exportIntervalMillis|export_interval_millis|ExportIntervalMilliseconds)"
+quote = r"[\"\x27]?"
+num = r"(?P<n>\d[\d_]*(?:\s*\*\s*\d[\d_]*)*)(?P<u>ms|[smhd])?(?!\w)"
+same = re.compile(key + quote + r"(?:\s*[:=]\s*|\s+)" + quote + num)
+pair = re.compile(key + quote + r"\s*,\s*" + quote + r"value" + quote + r"\s*[:=]\s*" + quote + num)
+rev = re.compile(r"value" + quote + r"\s*[:=]\s*" + quote + num + quote + r"\s*,\s*" + quote + r"name" + quote + r"\s*[:=]\s*" + quote + key)
+named = re.compile(key + quote + r"\s*$")
+value = re.compile(r"^\s*value\s*:\s*" + quote + num)
+vendored = re.compile(r"(^|/)bluebox-otel-instrumentation[^/]*/")
+unit = {None: 1, "ms": 1, "s": 1000, "m": 60000, "h": 3600000, "d": 86400000}
+def ms(m):
+    total, text = unit[m.group("u")], m.group("n")
+    for part in re.split(r"\s*\*\s*", text):
+        total *= int(part.replace("_", ""))
+    return total
+hits = 0
+for raw in sys.stdin.buffer.read().split(b"\0"):
+    path = raw.decode("utf-8", "replace")
+    if not path or vendored.search(path):
+        continue
+    try:
+        if not stat.S_ISREG(os.lstat(raw).st_mode):
+            continue
+        fd = os.open(raw, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
+    except OSError:
+        continue
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            continue
+        data = os.read(fd, 1 << 20)
+    except OSError:
+        continue
+    finally:
+        os.close(fd)
+    if b"\0" in data:
+        continue
+    lines = data.decode("utf-8", "replace").splitlines()
+    for i, line in enumerate(lines):
+        m = same.search(line) or pair.search(line) or rev.search(line)
+        if m:
+            name, ms_value = m.group("k"), ms(m)
+        else:
+            m = named.search(line)
+            n = value.match(lines[i + 1]) if m and i + 1 < len(lines) else None
+            if not n:
+                continue
+            name, ms_value = m.group("k"), ms(n)
+        if ms_value < 60000:
+            hits += 1
+            print("%s:%d: %s=%d" % (re.sub(r"[^\x20-\x7e]", "?", path), i + 1, name, ms_value))
+print("intervals: %d" % hits)') || die "intervals: could not read the work tree's file list"
+    count=${found##*intervals: }
+    case $count in '' | *[!0-9]*) die "intervals: the scan did not finish" ;; esac
+    if [[ "$count" = 0 ]]; then
+      printf "intervals: no export interval below 60000 ms in the repository's files\n"
+    else
+      printf '%s\n' "${found%intervals: *}" | mask
+      printf 'intervals: %s export interval(s) below 60000 ms: a verification-only value that uses up a free plan metric quota (Hard rule 13); remove each one you wrote, name the rest under Limitations\n' "$count"
+      exit 4
     fi
     ;;
   *) usage ;;

@@ -2,7 +2,7 @@
 name: bluebox-production-query
 description: 'Use BEFORE designing, planning, or implementing any change to a live, Bluebox-visible service, and in plan mode before presenting a plan (before ExitPlanMode) that touches one. Provides production context via `bluebox ask`. Triggers: "what does production look like", "current error rate", "p95/p99 latency", "who calls this service", "can it handle the load", "production baseline", "is there an active problem", "SLOs at risk", "stack trace", "this error in production", "500s", "users are reporting", "is this safe to merge", "review this change", "plan this change", "in plan mode", "assess this plan against monitoring", "ship today", "before we deploy", "before we roll out".'
 metadata:
-  version: "0.10.0"
+  version: "0.10.1"
   former-names: "production-query"
 ---
 
@@ -52,7 +52,7 @@ builds print a stderr warning for flag-like tokens).
 | Flag | Meaning |
 |---|---|
 | `--service <name>` | OTel `service.name`; pass it when you can find it in the project |
-| `--env <name>` | Deployment environment (`deployment.environment`), if known |
+| `--env <name>` | Deployment environment (`deployment.environment.name`), if known |
 | `--conversation-id <uuid>` | Continue a previous run (from the `conversation:` line on stderr) |
 | `--continue` | Resume the most recent `ask` on this host; `--conversation-id` wins if both are given |
 

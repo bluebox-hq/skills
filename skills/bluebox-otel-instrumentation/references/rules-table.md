@@ -9,7 +9,7 @@ vars); 8 (the one location the `Authorization` value goes into, the one the hand
 names too, and the quoting its consumer needs - quoted in a sourced `.env`, either quote in a compose `env_file`, unquoted in a
 Docker `--env-file`; the value never read); 9 (the declared version; each pin is resolved
 at install, against the declared runtime); and an `SDK` row naming the classes of the metric reader
-(level 2 and up) and log processor (level 3) a bootstrap constructs. Services on one
+(level 2 and up) and log processor (level 3) a bootstrap constructs; 13, level 2 and up (the runtime-metrics switch, no interval). Services on one
 recipe share a row; a row that differs by service names it. A Go plan at level 1 in a
 compose stack has four rows (values illustrative):
 
@@ -20,7 +20,7 @@ compose stack has four rows (values illustrative):
 | 8 | compose `env_file: .env` | `OTEL_EXPORTER_OTLP_HEADERS` in `.env`, quoted or not; value never read |
 | 9 | `go 1.22` in `go.mod`; newest release whose `GoVersion` is at most `1.22.0` | `…/otelhttp`, `…/autoexport`, `github.com/XSAM/otelsql`: resolved at install, against the declared runtime |
 
-A Node SDK plan at level 3 has five (values illustrative):
+A Node SDK plan at level 3 has six (values illustrative):
 
 | rule | binds here | resolved value |
 |---|---|---|
@@ -29,6 +29,7 @@ A Node SDK plan at level 3 has five (values illustrative):
 | 7 | `NodeSDK` builds every exporter from env | `OTEL_TRACES_EXPORTER=otlp`, `OTEL_METRICS_EXPORTER=otlp`, `OTEL_LOGS_EXPORTER=otlp`; no exporter package and no `*-otlp-http` in `package.json`; `OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf`, `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE=delta` |
 | 8 | `.env` sourced by `npm start` | `OTEL_EXPORTER_OTLP_HEADERS` in `.env`, quoted (the shell strips the quotes); value never read |
 | 9 | `engines.node >=18.19` in `package.json`; newest line whose `engines.node` admits it | `@opentelemetry/sdk-node`, `@opentelemetry/auto-instrumentations-node`, `@opentelemetry/winston-transport`: resolved at install, against the declared runtime |
+| 13 | no runtime metrics asked for | `OTEL_NODE_DISABLED_INSTRUMENTATIONS=runtime-node`, no `OTEL_METRIC_EXPORT_INTERVAL` |
 
 **Placement.** Its own table, never folded into the plan table or the question; the hub's
 order rule places it.

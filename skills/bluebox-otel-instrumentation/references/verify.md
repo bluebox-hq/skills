@@ -161,8 +161,9 @@ earlier run's keys prove nothing about this run. A selected signal the window sh
 gets the one follow-up below, then `blocked` (`verify_absent — 0 <signal> in the window`),
 never `reporting`.
 
-Spans present but "metrics absent" is usually a verifier miss when the log showed no metrics export
-failure; where nothing registers a metrics reader it is `signal_unwired`, not a miss. The one allowed
+A `metrics: none` service is not asked for metrics: none is no `verify_absent`.
+
+Spans present but "metrics absent" is usually a verifier miss when the log showed no metrics export failure; where nothing registers a metrics reader it is `signal_unwired`, not a miss. The one allowed
 follow-up ask names the expected keys for the missing services;
 what is still missing is `blocked` (`verify_absent —` with the evidence you have); do not
 loop. Derived `dt.*` keys
@@ -178,7 +179,7 @@ the older or stable semconv name:
 - Node (`@opentelemetry/instrumentation-http`): `http.server.duration`, `http.client.duration`
   (`http.server.request.duration`, `http.client.request.duration` with
   `OTEL_SEMCONV_STABILITY_OPT_IN=http`)
-- Java agent 2.x: `http.server.request.duration`, `http.client.request.duration`, `jvm.*`
+- Java agent 2.x: `http.server.request.duration`, `http.client.request.duration`
 - .NET auto-instrumentation: `http.server.request.duration`, `http.client.request.duration`
 - Go `otelhttp`: `http.server.request.duration` (`http.server.duration` on older contrib lines)
 - Python `opentelemetry-instrument`: `http.server.duration`, `http.client.duration`
@@ -187,7 +188,7 @@ the older or stable semconv name:
 ## Before finishing
 
 Scan tracked changes for secrets (`dt0c01.`/`dt0s16.` prefixes, real
-`OTEL_EXPORTER_OTLP_HEADERS` values, userinfo-bearing URLs), then stop and remove what you
-started. Record the verification table, window and attempts as `--step verify`
+`OTEL_EXPORTER_OTLP_HEADERS` values, userinfo-bearing URLs), then run
+`bash <skill dir>/scripts/verify.sh intervals` and act on its last line. It misses other ignored files, constants and computed values. Then stop and remove what you started. Record the verification table, window and attempts as `--step verify`
 with `--verified-scope` ([state-resume.md](state-resume.md)). If the first window was blocked, offer the run again for a fresh one. Then the
 closing summary ([closing-summary.md](closing-summary.md)).

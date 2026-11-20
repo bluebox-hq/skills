@@ -6,7 +6,6 @@ Never end your turn while builds, traffic or verification are pending; poll to c
 verify, then report. In a non-interactive session, ending early IS the failure. Never wait
 through a background tool call: it ends your turn, and unattended there is no next turn, so
 wait in the foreground with a bounded loop
-(`timeout 300 sh -c 'until curl -sf http://localhost:80/ >/dev/null; do sleep 5; done'`)
 and raise the tool's own timeout for a long command (`<compose> build`, a health wait, the
 batched `verify.sh ask`; Claude Code's Bash `timeout`, up to 600000 ms). The only legitimate
 stops are the asks this skill mandates: the scope question, the run offer when the plan did
@@ -45,7 +44,6 @@ machine start`, open Docker Desktop, install one) and mark the services `blocked
 (`no_runtime — …`).
 
 Look a dependency up through its toolchain, never by searching the disk, whatever the
-repository's notes say: nothing outside
-the repository and the toolchain's own caches is searched (`find /`, `find ~`), and a Go
-module's source directory is one command away
+repository's notes say: nothing outside the repository and the toolchain's own caches is
+searched (`find /`, `find ~`)
 ([language-traps.md](language-traps.md) § Dependency source).

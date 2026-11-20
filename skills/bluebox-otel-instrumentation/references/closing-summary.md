@@ -1,6 +1,6 @@
 # Closing summary (fixed shape)
 
-End the run with these three blocks, built from what the run saw.
+End the run with these three blocks.
 One line first: "Time to first telemetry:
 M min (expected L–H)", M from your first file change to the verification answer; with no
 service `reporting`, "not measured" in place of "M min", the reason under Limitations, never an estimate. L–H is
@@ -19,9 +19,7 @@ level 1 or 2, L and H at 0.8 and 1.2 of the sum.
    | problem-operator | skipped | out_of_scope — runs only under Kubernetes; the compose stack never deploys it |
    | cart | blocked | build_failed — `dotnet restore` NU1101 for OpenTelemetry.AutoInstrumentation; clears once the feed is in nuget.config |
 
-   `reporting` means signals verified in-product, and the detail names which ones.
-   `skipped` carries its census reason. `blocked` carries the
-   concrete blocker. Each service is in exactly one of those three;
+   `reporting` means signals verified in-product, and the detail names which ones. Each service is in exactly one of those three;
    "configured", "done" or "partial" are not states. A service whose wiring you could not prove is `blocked`.
 
    The detail of every `skipped` or `blocked` row opens with exactly one reason token, then
@@ -84,8 +82,7 @@ level 1 or 2, L and H at 0.8 and 1.2 of the sum.
    file, and never written by you); when `<skill dir>` is inside the repository, add that a branch
    can change the script, which then runs unprompted before consent:
 
-   > **Limitations**: `db` and `rabbitmq` are infrastructure and need a collector, which this
-   > run did not add.
+   > **Limitations**: `db` and `rabbitmq` need a collector, which this run did not add.
    >
    > **Next steps**: open the environment view for `docker-compose`. To verify
    > problem-operator, deploy the chart to a cluster and re-run
@@ -124,7 +121,7 @@ Record it as a second `--decision handover` in the same call.
   gate) apply from this answer on, never before it.
 
 Close with one line naming the readable record, `.bluebox/instrumentation-run.md`
-(git-ignored, so `git status` does not list it), and `docs/otel-instrumentation.md` when
+(git-ignored), and `docs/otel-instrumentation.md` when
 the developer chose "open a PR"; a run that kept no records says so.
 
 For deeper query patterns load the `bluebox-production-query` skill.

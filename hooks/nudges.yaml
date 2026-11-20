@@ -1,0 +1,14 @@
+# Moments for the prompt hook: a prompt that contains one of a moment's keywords gets its text.
+nudges:
+  - moment: planning
+    text: "Bluebox: this looks like planning a change to a live service. Before you settle the design, use the bluebox-production-query skill to check its baseline, callers and dependencies, and the SLOs at risk."
+    keywords: [plan, design, architecture, refactor, migrate, proposal]
+  - moment: debugging
+    text: "Bluebox: this looks like debugging a live service. Before you change code, use the bluebox-production-query skill to check its live errors and active problems."
+    keywords: [error, exception, stack trace, crash, slow, latency, timeout, outage, failing, broken]
+  - moment: reviewing
+    text: "Bluebox: this looks like reviewing a change. Before you call it safe to merge, use the bluebox-production-query skill to check its blast radius on the services it touches."
+    keywords: [review, pull request, diff, safe to merge, blast radius]
+  - moment: before_deploy
+    text: "Bluebox: this looks like a deploy or rollout. Before it starts, use the bluebox-production-query skill to check the service's current health and error budget."
+    keywords: [deploy, rollout, release, canary, promote]

@@ -58,6 +58,21 @@ set and take the answer, as Workflow step 4 does for the user's terminal; no hea
 (`no_token`), nothing asked. No answer from `bluebox ask` is `blocked` (`verify_unreadable`),
 a collector never applied or started `blocked` (`not_started`), never verified.
 
+## Metric volume (Hard rule 13)
+
+Metric data points past a plan's monthly quota (3M on a free plan) pause all ingest, traces
+included. One idle Node process sends about 65 OTLP data points per export, nearly all runtime
+metrics: about 94,000 a day at the 60 s default.
+
+- **Runtime metrics are off** unless the request asks for them. Set it beside the other
+  `OTEL_*` variables: Node `OTEL_NODE_DISABLED_INSTRUMENTATIONS=runtime-node`; Java agent `OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED=false`;
+  Python `OTEL_PYTHON_DISABLED_INSTRUMENTATIONS=system_metrics`. Append to a variable already set. A service whose instrumentation then emits no
+  metrics (any HTTP, database or messaging instrumentation emits them) gets `metrics: none` in its plan row and out of the ask, and is
+  `reporting` on its other signals.
+- **The export interval stays 60 s.** Step 5's 10 s is verification only: 6 times the data points.
+- **Add no metric flush of your own:** each per-request meter `forceFlush()` sends a data point per series. Lambda: [lambda.md](lambda.md).
+  Cloud Functions: metrics may be lost at scale-to-zero.
+
 ## Identity attributes (Hard rule 5)
 
 `vcs.repository.url.full` + `vcs.ref.head.revision` from build-time values (build-arg ->
@@ -67,6 +82,17 @@ plan table's one spelling), plus cloud
 attributes where a detector exists. Before the URL becomes the build-arg, make it
 `https://<host>/<owner>/<repo>`, case kept: map ssh or `http://`, drop userinfo, port, a
 trailing `.git` or `/`. Bluebox matches it exactly.
+
+## Declared criticality
+
+Set `primary_tags.criticality` (`high`/`medium`/`low`) only as the user states it;
+never infer one. It counts only beside the workload, so set both in the service's environment:
+
+```bash
+OTEL_RESOURCE_ATTRIBUTES="deployment.environment.name=<env>,primary_tags.criticality=high,k8s.deployment.name=<name>,k8s.namespace.name=<ns>,k8s.cluster.name=<CLUSTER_NAME>"
+```
+
+Or `k8s.statefulset.name`, `k8s.daemonset.name`. Never set it outside Kubernetes.
 
 ## The `Authorization` value (Hard rule 8)
 
@@ -119,10 +145,7 @@ as-is, the CLI call below informational only.
 
 Without one, `bluebox version` next, compared as semver (v0.100.0 is above v0.84.0):
 below v0.84.0 the CLI is stale (those builds exit 2 on a connected workspace);
-`v0.0.0` is a dev build, exempt. A stale CLI is the user's to
-replace, not yours (Hard rule 12; `bluebox update` also exits 0 without replacing a
-package-manager install): say in one line that `bluebox update` fixes it, then
-continue with the binary you have.
+`v0.0.0` is a dev build, exempt. A stale CLI is the user's to replace (Hard rule 12): say in one line that `bluebox update` fixes it and continue.
 
 Then open the run's journey with its first CLI call, from the repository root:
 `BLUEBOX_JOURNEY_TYPE=instrumentation bluebox otlp-endpoint`. Every later `bluebox` call from this
@@ -131,15 +154,13 @@ provisioning - tell the user and continue wiring, do not poll; exit 2 = no obser
 connection yet - tell the user to connect one on the Setup page, continue wiring and treat verification as `blocked` on it unless an endpoint is
 already in the environment. From a stale CLI, or when stderr says the CLI "is behind … run `bluebox
 update`", exit 2 is not yet that verdict: tell the user that `bluebox update` and a second
-`bluebox otlp-endpoint` settle it, and that the Setup page is where a missing connection
-gets made if the updated CLI still exits 2. The detail stays provisional until a current CLI answers (`other:
+`bluebox otlp-endpoint` settle it, and the Setup page makes a missing connection
+if the updated CLI still exits 2. The detail stays provisional until a current CLI answers (`other:
 otlp-endpoint exit 2 from bluebox v0.75.0, below v0.84.0, unconfirmed`) and becomes
 `no_endpoint` only when one does.
 
 Wiring puts the endpoint this step settled in each service's deployment entry (§ Config is
-external). Never create `.env.otel.bluebox-template` or write a bare `.env.otel`; a template
-an older CLI left at the repo root is no input: leave it as it is, never read the endpoint
-from it, never wire it as an env file.
+external). Never create `.env.otel.bluebox-template` or write a bare `.env.otel`; one an older CLI left is no input (Workflow step 2).
 
 ## Header precondition (Workflow step 4)
 

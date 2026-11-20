@@ -47,7 +47,7 @@ time with `otelhttp.WithSpanNameFormatter` (or `otelhttp.WithRouteTag` per route
 ## Node recipe
 
 `@opentelemetry/sdk-node` + `@opentelemetry/auto-instrumentations-node`, loaded with
-`node --require ./otel.js`, versions resolved under Hard rule 9. Four things the zero-code
+`node --require ./otel.js`, versions resolved under Hard rule 9. Five things the zero-code
 path leaves to you:
 
 - **Construct no exporter, metric reader or log processor.** `new NodeSDK({ resource,
@@ -55,6 +55,9 @@ path leaves to you:
   `OTEL_METRICS_EXPORTER=otlp` and `OTEL_LOGS_EXPORTER=otlp` in the deployment entry.
   Constructor shapes drift: `sdk-logs` 0.222's
   `BatchLogRecordProcessor` takes `{ exporter }`.
+- **Runtime metrics are off** (Hard rule 13): `OTEL_NODE_DISABLED_INSTRUMENTATIONS=runtime-node`
+  in the deployment entry. An `enabled: true` for it already in the repo is the user asking:
+  keep it, set no variable, note it in the rule 13 plan row.
 - **An existing bootstrap that constructs exporters** keeps the `-proto` packages
   (`@opentelemetry/exporter-trace-otlp-proto`, `@opentelemetry/exporter-metrics-otlp-proto`,
   `@opentelemetry/exporter-logs-otlp-proto`); the `-otlp-http` siblings send JSON, ingest

@@ -1,6 +1,6 @@
 # State and resume
 
-Once the question is answered, before any service file changes, write `.bluebox/instrumentation-run.json` (`.bluebox/` git-ignored): the
+Once the question is answered, before any service file changes, write `.bluebox/instrumentation-run.json` (git-ignored): the
 repository (its origin URL without userinfo), the revision (`git rev-parse HEAD`), the level, the scope, and one entry per planned service -
 `status` (`planned`, `wired`, `blocked`, `skipped`), the files its plan row named as
 repository-relative paths with the sha256 of their content after your edit, and the `reason`
@@ -65,8 +65,7 @@ BLUEBOX_RECORD_END
 
 Every report line opens with `> ` (a blank one `>`), which the script strips, so no line can
 close the heredoc early, the fixed end line included; `--decision` repeats per answer. One
-call per step, the same shape, the moment the step ends; a report never passed leaves its
-section `_pending_` (`_not run_` once the handover is recorded), and until the handover is
+call per step, the same shape, the moment the step ends; until the handover is
 recorded the Status line names the first step not passed:
 
 | call | when | the report carries |
