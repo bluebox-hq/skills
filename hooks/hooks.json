@@ -1,0 +1,28 @@
+{
+  "description": "Bluebox notes at session start and a one-line nudge on prompts that match a moment.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo --% >/dev/null;: ' | Out-Null\n<#'\n[ -n \"${CLAUDE_PLUGIN_ROOT}\" ] || exit 0; exec sh \"${CLAUDE_PLUGIN_ROOT}/hooks/bluebox-hook.sh\"\n#>\nif (-not $env:CLAUDE_PLUGIN_ROOT) { exit 0 }; & ([scriptblock]::Create([IO.File]::ReadAllText(\"$env:CLAUDE_PLUGIN_ROOT/hooks/bluebox-hook.ps1\")))",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo --% >/dev/null;: ' | Out-Null\n<#'\n[ -n \"${CLAUDE_PLUGIN_ROOT}\" ] || exit 0; exec sh \"${CLAUDE_PLUGIN_ROOT}/hooks/bluebox-hook.sh\"\n#>\nif (-not $env:CLAUDE_PLUGIN_ROOT) { exit 0 }; & ([scriptblock]::Create([IO.File]::ReadAllText(\"$env:CLAUDE_PLUGIN_ROOT/hooks/bluebox-hook.ps1\")))",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

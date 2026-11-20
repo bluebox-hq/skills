@@ -1,0 +1,70 @@
+name: Test plugin hooks
+
+on:
+  pull_request:
+    paths: ["hooks/**", "tests/hooks/**", ".claude-plugin/**", "skills/**", ".github/workflows/test-hooks.yml"]
+  push:
+    branches: [main]
+    paths: ["hooks/**", "tests/hooks/**", ".claude-plugin/**", "skills/**", ".github/workflows/test-hooks.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            runners: sh,pwsh
+          - os: macos-latest
+            runners: sh,pwsh
+          # One job per Windows shell, since PowerShell startup dominates the run there.
+          - os: windows-latest
+            runners: sh
+          - os: windows-latest
+            runners: pwsh
+          # powershell is Windows PowerShell 5.1; powershell-nobash removes Git Bash, sh and awk from PATH.
+          - os: windows-latest
+            runners: powershell
+          - os: windows-latest
+            runners: powershell-nobash
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Run the hook tests
+        env:
+          HOOK_RUNNERS: ${{ matrix.runners }}
+        run: python -m unittest -v tests/hooks/test_hooks.py
+
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code@2.1.328
+      - name: Validate the plugin
+        env:
+          DISABLE_AUTOUPDATER: "1"
+        run: |
+          claude plugin validate --json . > validate.json || { cat validate.json; exit 1; }
+          python3 - <<'EOF'
+          import json
+          report = json.load(open("validate.json"))
+          parts = [report["manifest"], *report.get("contents", [])]
+          problems = [f"{p['file']}: {w['path']}: {w['message']}" for p in parts for w in p["errors"] + p["warnings"]]
+          print("\n".join(problems) or "No errors or warnings.")
+          raise SystemExit(1 if problems or not report["success"] else 0)
+          EOF
