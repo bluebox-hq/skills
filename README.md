@@ -99,6 +99,14 @@ Antigravity opens the Bluebox sign-in when it first connects to the `bluebox` MC
 
 Kiro installs Bluebox as a power: the MCP server plus a guide for the agent ([POWER.md](POWER.md)). Open the **Powers** panel, select **Add Custom Power**, choose **Import power from GitHub** and enter `https://github.com/bluebox-hq/skills`. Kiro opens the Bluebox sign-in when it first connects. The power doesn't include the skills. To add them, run `npx skills add bluebox-hq/skills --skill '*' --agent kiro-cli`.
 
+## Postman
+
+[postman/bluebox-mcp.postman_collection.json](postman/bluebox-mcp.postman_collection.json) has requests for every tool of the Bluebox MCP server, so you can try the server without a coding agent. In Postman, select **Import** and choose the file, or paste its raw GitHub URL.
+
+To sign in with OAuth, first send **Setup → Register the Postman client** once. It saves the `client_id` that sign-in needs: without it, sign-in fails with "Cannot sign in: The app that sent you here is not registered or has been disabled." A registration that never gets a token is deleted after 30 days, so if sign-in shows that message later, send Register again. Then select **Get New Access Token** on the collection's **Authorization** tab and sign in to Bluebox. Then send the requests in **MCP**. Where a browser can't open, [create an access token](https://docs.bluebox.ai/mcp-server#create-an-access-token) and set it as `access_token` in a Postman environment, as the **current value** only. Postman syncs and exports initial values, so never put the token there. When `access_token` is set, every request sends it instead of the OAuth token.
+
+`ask` starts a Bluebox run that counts against your workspace's AI usage. The other tools only read.
+
 ## Update and remove
 
 ```bash
