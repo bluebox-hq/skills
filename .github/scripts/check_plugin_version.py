@@ -10,7 +10,8 @@ import subprocess
 import sys
 
 MANIFEST = ".claude-plugin/plugin.json"
-PLUGIN_DIRS = (".claude-plugin/", "hooks/")
+# skills/ is left out: the release sync pushes it to main directly and sets the version itself.
+PLUGIN_DIRS = (".claude-plugin/", "hooks/", "assets/")
 PLUGIN_FILES = (".mcp.json",)
 
 

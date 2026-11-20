@@ -62,6 +62,7 @@ class CheckPluginVersionTest(unittest.TestCase):
             "new hook file": {"hooks/nudges.yaml": "nudges: []\n"},
             "MCP config": {".mcp.json": '{"a": 1}\n'},
             "marketplace": {".claude-plugin/marketplace.json": "{}\n"},
+            "plugin icon": {"assets/logo.png": "png\n"},
         }
         for label, files in cases.items():
             with self.subTest(label):
