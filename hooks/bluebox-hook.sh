@@ -14,13 +14,14 @@ json() {
 	printf '%s\n' "$input" | fold -b -w 2048 | BLUEBOX_YAML="$here/nudges.yaml" awk -v mode="$1" -v shown="${2-}" -f "$here/bluebox-hook.awk"
 }
 
-event='' source='' session='' cwd=''
+event='' source='' session='' cwd='' notification=''
 while IFS=$tab read -r k v; do
 	case $k in
 	hook_event_name) event=$v ;;
 	source) source=$v ;;
 	session_id) session=$v ;;
 	cwd) cwd=$v ;;
+	notification) notification=$v ;;
 	esac
 done <<EOF
 $(json fields)
@@ -31,7 +32,10 @@ SessionStart)
 	sub=session-start
 	[ "$source" = startup ] || exit 0
 	;;
-UserPromptSubmit) sub=prompt ;;
+UserPromptSubmit)
+	sub=prompt
+	[ -z "$notification" ] || exit 0
+	;;
 *) exit 0 ;;
 esac
 

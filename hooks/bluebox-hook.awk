@@ -59,12 +59,16 @@ function codepoint(h,    v, k) {
 # A top-level value no mode reads is skipped without being copied.
 function unwanted() {
     if (d != 1 || type[1] != "o" || wantkey[1]) return 0
-    return mode == "fields" ? !(key[1] in want) : mode == "nudge" ? key[1] != "prompt" : 0
+    return mode == "fields" ? !(key[1] in want || key[1] == "prompt") : mode == "nudge" ? key[1] != "prompt" : 0
 }
 
 function str(s) {
     if (d > 0 && type[d] == "o" && wantkey[d]) { key[d] = s; return }
     if (mode == "fields" && d == 1 && (key[1] in want)) { gsub(/[\t\r\n]/, " ", s); print key[1] "\t" s }
+    else if (mode == "fields" && d == 1 && key[1] == "prompt") {
+        # Claude Code submits its own background-task notices as prompts.
+        sub(/^[ \t]+/, "", s); if (index(s, "<task-notification>") == 1) print "notification\t1"
+    }
     else if (mode == "nudge" && d == 1 && key[1] == "prompt") prompt = s
     else if (mode == "mcp" && key[d] == "url" && bluebox(s) &&
              ((d == 3 && key[1] == "mcpServers") ||

@@ -491,6 +491,21 @@ class HookCase:
         r = self.prompt('Why is checkout "slow"?\n\tSee the stack trace: €… 日本', session="esc")
         self.assertEqual(r.stdout, {n["moment"]: n["text"] for n in load_nudges()}["debugging"] + "\n")
 
+    def test_a_task_notification_adds_nothing_and_leaves_the_moment_unshown(self):
+        nudges = {n["moment"]: n["text"] for n in load_nudges()}
+        notification = ("\n <task-notification>\n<task-id>b1</task-id>\n<status>completed</status>\n"
+                        "<summary>Background command \"plan why checkout is slow\" completed</summary>\n"
+                        "</task-notification>")
+        self.assertNothing(self.prompt(notification, session="tn"))
+        self.assertEqual(self.prompt("Plan the rollout", session="tn").stdout, nudges["planning"] + "\n")
+        self.assertEqual(self.prompt("quote <task-notification> then: why is checkout slow?", session="tn").stdout,
+                         nudges["debugging"] + "\n")
+
+    def test_a_task_notification_does_not_call_the_cli(self):
+        self.add_stub_cli("hooks")
+        self.assertNothing(self.prompt("<task-notification><status>completed</status></task-notification>"))
+        self.assertFalse(self.stub_log.exists())
+
     def test_a_large_prompt_is_read_in_full_and_fast(self):
         text = ("lorem ipsum dolor \\ \"x\" sit amet\n" * 20000) + "ready to deploy"
         r = self.prompt(text, session="big")
