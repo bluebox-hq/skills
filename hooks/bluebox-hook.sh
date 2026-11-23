@@ -87,7 +87,7 @@ case $url in
 *) url='' ;;
 esac
 [ ${#url} -le 300 ] || url=''
-[ -n "$url" ] && printf '%s\n' "Bluebox: when a task touches a live service, call the Bluebox MCP tool list_services with repository_url \"$url\" to find the services built from this repository."
+[ -n "$url" ] && printf '%s\n' "Bluebox: when a task touches a live service, call the Bluebox MCP tool list_services with repository_url \"$url\", or with search set to the service name if that finds none."
 
 # Prints "<up to two names>[ and N more]" for names on stdin, one per line.
 names() {

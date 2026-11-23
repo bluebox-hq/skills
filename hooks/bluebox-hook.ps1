@@ -189,7 +189,7 @@ try {
     if ($remote) { $url = "$(Invoke-Git -C $cwd remote get-url $remote | Select-Object -First 1)" -replace '^([A-Za-z][A-Za-z0-9+.-]*://)[^/]*@', '$1' }
     # The remote goes to the model, so it is held to URL characters and 300 of them; that doesn't make it a real repo URL.
     if ($url -cmatch '^(file:|/|\.|.:[\\/])' -or $url -cmatch '[^A-Za-z0-9._~:/@%+-]' -or $url -notmatch ':' -or $url.Length -gt 300) { $url = '' }
-    if ($url) { $lines.Add("Bluebox: when a task touches a live service, call the Bluebox MCP tool list_services with repository_url `"$url`" to find the services built from this repository.") }
+    if ($url) { $lines.Add("Bluebox: when a task touches a live service, call the Bluebox MCP tool list_services with repository_url `"$url`", or with search set to the service name if that finds none.") }
 
     $homeDir = if ($env:USERPROFILE) { $env:USERPROFILE } else { $env:HOME }
     $config = if ($env:CLAUDE_CONFIG_DIR) { $env:CLAUDE_CONFIG_DIR } else { Join-Path $homeDir '.claude' }
