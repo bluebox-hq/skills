@@ -90,7 +90,7 @@ try {
         'UserPromptSubmit' {
             $sub = 'prompt'
             # Claude Code submits its own background-task notices as prompts.
-            if ("$($fields['prompt'])".TrimStart().StartsWith('<task-notification>', [StringComparison]::Ordinal)) { exit 0 }
+            if ("$($fields['prompt'])".TrimStart(' ', "`t", "`r", "`n").StartsWith('<task-notification>', [StringComparison]::Ordinal)) { exit 0 }
         }
         default { exit 0 }
     }

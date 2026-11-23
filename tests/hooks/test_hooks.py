@@ -501,6 +501,14 @@ class HookCase:
         self.assertEqual(self.prompt("quote <task-notification> then: why is checkout slow?", session="tn").stdout,
                          nudges["debugging"] + "\n")
 
+    def test_the_tag_after_a_non_ascii_space_is_a_user_prompt(self):
+        planning = {n["moment"]: n["text"] for n in load_nudges()}["planning"] + "\n"
+        text = "\u00a0<task-notification> plan the rollout"
+        self.assertEqual(self.prompt(text, session="nbsp-raw").stdout, planning)
+        escaped = json.dumps({"session_id": "nbsp-esc", "cwd": str(self.repo), "hook_event_name": "UserPromptSubmit",
+                              "prompt": text}).encode()
+        self.assertEqual(self.run_hook("UserPromptSubmit", raw_input=escaped).stdout, planning)
+
     def test_a_task_notification_does_not_call_the_cli(self):
         self.add_stub_cli("hooks")
         self.assertNothing(self.prompt("<task-notification><status>completed</status></task-notification>"))

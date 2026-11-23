@@ -49,11 +49,11 @@ function feed(c) {
     else if (c == ":") wantkey[d] = 0
 }
 
-# Printable ASCII stays; anything else becomes a space, which no keyword or allowed value contains.
+# Printable ASCII stays, a control character becomes a space, and non-ASCII becomes DEL, which is not whitespace.
 function codepoint(h,    v, k) {
     v = 0
     for (k = 1; k <= 4; k++) v = v * 16 + index(hex, tolower(substr(h, k, 1))) - 1
-    return (v >= 32 && v < 127) ? sprintf("%c", v) : " "
+    return (v >= 32 && v < 127) ? sprintf("%c", v) : v < 32 ? " " : "\177"
 }
 
 # A top-level value no mode reads is skipped without being copied.
