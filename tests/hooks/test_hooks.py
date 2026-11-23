@@ -202,6 +202,7 @@ class HookCase:
         self.assertEqual(len(lines), 1, r.stdout)
         self.assertIn("list_services", lines[0])
         self.assertIn('repository_url "https://github.com/acme/shop.git"', lines[0])
+        self.assertIn("or with search set to the service name if that finds none.", lines[0])
         self.assertNotIn("CLI", r.stdout)
         self.assertNotIn("install", r.stdout.lower())
 
