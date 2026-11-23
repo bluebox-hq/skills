@@ -87,7 +87,11 @@ try {
 
     switch -CaseSensitive ($fields['hook_event_name']) {
         'SessionStart' { $sub = 'session-start'; if ($fields['source'] -cne 'startup') { exit 0 } }
-        'UserPromptSubmit' { $sub = 'prompt' }
+        'UserPromptSubmit' {
+            $sub = 'prompt'
+            # Claude Code submits its own background-task notices as prompts.
+            if ("$($fields['prompt'])".TrimStart(' ', "`t", "`r", "`n").StartsWith('<task-notification>', [StringComparison]::Ordinal)) { exit 0 }
+        }
         default { exit 0 }
     }
 
