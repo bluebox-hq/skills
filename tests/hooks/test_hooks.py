@@ -202,7 +202,10 @@ class HookCase:
         self.assertEqual(len(lines), 1, r.stdout)
         self.assertIn("list_services", lines[0])
         self.assertIn('repository_url "https://github.com/acme/shop.git"', lines[0])
-        self.assertIn("or with search set to the service name if that finds none.", lines[0])
+        self.assertEqual(
+            lines[0],
+            'Bluebox: when a task touches a live service, call the Bluebox MCP tool list_services with repository_url "https://github.com/acme/shop.git", or with search set to the service name if that finds none.',
+        )
         self.assertNotIn("CLI", r.stdout)
         self.assertNotIn("install", r.stdout.lower())
 
