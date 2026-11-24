@@ -1,8 +1,8 @@
 ---
 name: bluebox-production-query
-description: 'Use BEFORE designing, planning, or implementing any change to a live, Bluebox-visible service, and in plan mode before presenting a plan (before ExitPlanMode) that touches one. Provides production context via `bluebox ask`. Triggers: "what does production look like", "current error rate", "p95/p99 latency", "who calls this service", "can it handle the load", "production baseline", "is there an active problem", "SLOs at risk", "stack trace", "this error in production", "500s", "users are reporting", "is this safe to merge", "review this change", "plan this change", "in plan mode", "assess this plan against monitoring", "ship today", "before we deploy", "before we roll out".'
+description: 'Use BEFORE designing, planning, or implementing any change to a live, Bluebox-visible service, and in plan mode before presenting a plan (before ExitPlanMode) that touches one, and to find out why a live service is slow or failing in production. Provides production context via `bluebox ask`. Triggers: "what does production look like", "current error rate", "p95/p99 latency", "is slow in production", "where does the time go", "who calls this service", "can it handle the load", "production baseline", "is there an active problem", "SLOs at risk", "stack trace", "this error in production", "500s", "users are reporting", "is this safe to merge", "review this change", "plan this change", "in plan mode", "assess this plan against monitoring", "ship today", "before we deploy", "before we roll out".'
 metadata:
-  version: "0.10.1"
+  version: "0.11.1"
   former-names: "production-query"
 ---
 
@@ -27,6 +27,7 @@ Route by task shape. The risk tier sizes planning depth, never the route:
 | Task shape | Route |
 |---|---|
 | Bug-shaped: stack trace, 500s, "users are reporting" | **Bugfix path** |
+| Slow request: "checkout is slow", high p95 | **Slow requests** |
 | A concrete diff: "is this safe to merge" | **Change-aware grounding** |
 | Plan, feature or migration on a deployed service | **Planning workflow** |
 | In plan mode, about to present a plan | **Plan-mode integration** |
@@ -123,8 +124,12 @@ in**. Grep before you guess. **Never pass a guessed name to `--service`**: a wro
 returns empty or misleading data.
 
 ```bash
-grep -rE 'OTEL_SERVICE_NAME|OTEL_RESOURCE_ATTRIBUTES|service\.name' .env* docker-compose*.yml Dockerfile* k8s/ charts/ --include='*.y*ml' 2>/dev/null | grep -v node_modules
+grep -rsoE '(OTEL_SERVICE_NAME|service\.name)(("?=|"?:[[:space:]]*|[[:space:]]+)("[A-Za-z0-9._/ -]+"|[A-Za-z0-9._/-]+))?' --include='.env*' --include='docker-compose*' --include='Dockerfile*' --include='*.y*ml' --exclude-dir=node_modules --exclude-dir=vendor --exclude-dir=.git .
 ```
+
+It prints only each key and the value beside it, never the whole line, which can carry a
+token. A key printed alone has its value on another line, in a variable, or blank: ask the
+user for the name rather than read that file, which can carry a token too.
 
 Still unsure? Ask production:
 `bluebox ask --env <e> "which services report telemetry here? any matching <repo name>?"`.
@@ -135,6 +140,7 @@ Then confirm with the user, because namesakes exist. Omit `--env` if unknown.
 Work outside-in, one `bluebox ask` per step, chained with `--conversation-id`:
 
 1. **Baseline**: "current request rate, error rate, and p50/p95/p99 latency for `<service>` in `<env>` over the last 24h?"
+   A high latency sends you to **Slow requests** before any other step, in every tier.
 2. **Dependencies**: "what does `<service>` call, and what calls it, per the topology/entity
    model (Smartscape) *and* per recent spans, with rates?" Name the source for each claim:
    **topology = connected; spans = talked recently; code = could connect.**
@@ -206,6 +212,21 @@ When the task is bug-shaped, ground the fix in the production failure before you
    **absent** from post-fix logs.
 
 Absence of logs ≠ absence of events (prod log levels, sampling).
+
+## Slow requests: where the time goes
+
+When the user reports slowness, or a baseline shows high latency, make this your first ask:
+
+1. **Break down the child time**: "for `<entry span>` on `<service>`, which child spans account
+   for its time, across every span kind (client, producer, internal, consumer), with counts,
+   average and p95?"
+2. **Confirm on slow traces.** Aggregate percentiles can come from different traces, and spans
+   can overlap or run async. Ask for the spans of a few traces near the reported percentile, with
+   start and end times; look at the extreme outliers apart, since their cause can differ. A child
+   that runs through the entry span's slow interval in each of them is the lead; read its code next.
+3. **Accept an attribution only from a breakdown of every span kind.** Outbound calls alone miss
+   message sends (producer) and in-process work (internal). An answer that names a slow
+   downstream call, or "the service itself", from them alone is unconfirmed: re-ask with step 1.
 
 ## Change-aware grounding: read the diff first
 
