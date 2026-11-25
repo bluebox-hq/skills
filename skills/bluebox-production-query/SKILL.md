@@ -1,8 +1,8 @@
 ---
 name: bluebox-production-query
-description: 'Use BEFORE designing, planning, or implementing any change to a live, Bluebox-visible service, and in plan mode before presenting a plan (before ExitPlanMode) that touches one, and to find out why a live service is slow or failing in production. Provides production context via `bluebox ask`. Triggers: "what does production look like", "current error rate", "p95/p99 latency", "is slow in production", "where does the time go", "who calls this service", "can it handle the load", "production baseline", "is there an active problem", "SLOs at risk", "stack trace", "this error in production", "500s", "users are reporting", "is this safe to merge", "review this change", "plan this change", "in plan mode", "assess this plan against monitoring", "ship today", "before we deploy", "before we roll out".'
+description: 'Use BEFORE designing, planning, or implementing any change to a live, Bluebox-visible service, and in plan mode before presenting a plan (before ExitPlanMode) that touches one, and to find out why a live service is slow or failing in production. Provides production context via `bluebox ask`. Do not use it for conceptual questions about Bluebox itself (what an Investigation is, how the Bluebox CLI or its ask command works, what Bluebox does); `bluebox-overview` covers those. Triggers: "what does production look like", "current error rate", "p95/p99 latency", "is slow in production", "where does the time go", "who calls this service", "can it handle the load", "production baseline", "is there an active problem", "SLOs at risk", "stack trace", "this error in production", "500s", "users are reporting", "is this safe to merge", "review this change", "plan this change", "in plan mode", "assess this plan against monitoring", "ship today", "before we deploy", "before we roll out".'
 metadata:
-  version: "0.11.1"
+  version: "0.11.2"
   former-names: "production-query"
 ---
 
