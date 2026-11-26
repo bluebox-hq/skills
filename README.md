@@ -69,15 +69,19 @@ Codex opens the Bluebox sign-in when you install the plugin. If you skip it, run
 
 ### Cursor
 
-Clone this repository into your local plugins folder:
+1. In Cursor, open **Customize** → **Plugins**, select **+ Add** → **From GitHub Repository**, enter `https://github.com/bluebox-hq/skills` and select **Import**.
+2. Find **Bluebox** under the **Personal** marketplaces and select **Add**.
+3. Under **MCPs**, select **Sign In** next to `bluebox` and log in to Bluebox.
+
+To remove the marketplace later, select **⋯** next to it on the **Personal** tab.
+
+To install without a marketplace, clone this repository into your local plugins folder instead:
 
 ```bash
 git clone https://github.com/bluebox-hq/skills.git ~/.cursor/plugins/local/bluebox
 ```
 
-Clone it there directly. Cursor rejects a symlink in `~/.cursor/plugins/local` that points outside that folder.
-
-Reload Cursor, then sign in to the `bluebox` MCP server in Cursor's MCP settings. To update, run `git pull` in the clone.
+Clone it there directly. Cursor rejects a symlink in `~/.cursor/plugins/local` that points outside that folder. Reload Cursor, then sign in to the `bluebox` MCP server in Cursor's MCP settings. To update the clone, run `git pull`.
 
 ### Devin
 
