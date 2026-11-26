@@ -65,13 +65,13 @@ echo '{"hooks_enabled":"false"}' | claude plugin configure bluebox@bluebox --val
 
 If you have the `bluebox` CLI, `bluebox hooks disable` turns off the hooks for your user, including the ones `bluebox setup` adds.
 
-A headless run (`claude -p`) can't ask you to approve a command or open the plugin's sign-in, so the skills use the `bluebox` CLI there. Allow its commands in the job:
+A headless run (`claude -p`) can't ask you to approve a tool. In CI, where nobody signed in to the plugin, the skills use the `bluebox` CLI, so allow its commands in the job:
 
 ```bash
 claude -p "Is this service healthy in production?" --allowedTools "Bash(bluebox ask:*)" "Bash(bluebox services:*)"
 ```
 
-Or add both rules to `permissions.allow` in the job's settings. The CLI reads its token from `BLUEBOX_TOKEN`.
+Or add both rules to `permissions.allow` in the job's settings. Where the plugin is signed in, the skills call its MCP tools instead, so also allow `mcp__plugin_bluebox_bluebox`. The CLI reads its token from `BLUEBOX_TOKEN`. Don't pass the token to a run on an untrusted pull request: that checkout's Claude Code settings and hooks run with it.
 
 ### Codex
 
