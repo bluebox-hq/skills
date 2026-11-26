@@ -51,7 +51,27 @@ claude plugin marketplace add bluebox-hq/skills
 claude plugin install bluebox@bluebox
 ```
 
+You don't need the `bluebox` CLI. Once the marketplace is added, `/plugin install bluebox` in Claude Code works too.
+
 To sign in, run `/mcp` in Claude Code, select `plugin:bluebox:bluebox` and log in to Bluebox. To get updates, turn on auto-update for the `bluebox` marketplace under `/plugin` → **Marketplaces**, or run `claude plugin update bluebox@bluebox`.
+
+The plugin adds two hooks, in git repositories only. When a session starts, Claude gets a note on how to find the repository's services in Bluebox, plus a warning if Bluebox is installed twice. When a prompt looks like planning, debugging, a review or a deploy, Claude gets a one-line hint to check production first, once per kind of hint per session. Each note stays under 300 tokens.
+
+To turn the hooks off and keep the skills and the MCP server, run `/plugin configure bluebox@bluebox` in Claude Code and turn off **Bluebox hooks**, or run this and restart Claude Code:
+
+```bash
+echo '{"hooks_enabled":"false"}' | claude plugin configure bluebox@bluebox --values-stdin
+```
+
+If you have the `bluebox` CLI, `bluebox hooks disable` turns off the hooks for your user, including the ones `bluebox setup` adds.
+
+A headless run (`claude -p`) can't ask you to approve a command or open the plugin's sign-in, so the skills use the `bluebox` CLI there. Allow its commands in the job:
+
+```bash
+claude -p "Is this service healthy in production?" --allowedTools "Bash(bluebox ask:*)" "Bash(bluebox services:*)"
+```
+
+Or add both rules to `permissions.allow` in the job's settings. The CLI reads its token from `BLUEBOX_TOKEN`.
 
 ### Codex
 
